@@ -8,6 +8,9 @@ import { useMap } from '../Context/MapContext';
 const containerStyle = { width: '100%', height: '100vh' };
 const pakistanBounds = { north: 37.0, south: 23.5, west: 60.9, east: 77.0 };
 
+// 👇 Libraries constant to avoid reloading warning
+const libraries = ['visualization'];
+
 const darkMapStyle = [
   { featureType: "all", elementType: "geometry", stylers: [{ color: "#1e1e1e" }] },
   { featureType: "all", elementType: "labels.text.fill", stylers: [{ color: "#ffffff" }] },
@@ -36,6 +39,7 @@ const Home = () => {
   const { user } = useUser();
   const { mapCenter, mapZoom } = useMap();
 
+  // Dark mode observer
   useEffect(() => {
     const observer = new MutationObserver(() =>
       setIsDarkMode(document.documentElement.classList.contains('dark'))
@@ -77,12 +81,15 @@ const Home = () => {
     const fetchImages = async () => {
       let all = [];
       const permissions = [];
-      if (user?.role === 'admin') permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
-      else {
+
+      if (user?.role === 'admin') {
+        permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
+      } else {
         if (user?.permissions?.includes('FirstEmail')) permissions.push('FirstEmail');
         if (user?.permissions?.includes('SecondEmail')) permissions.push('SecondEmail');
         if (user?.permissions?.includes('ThirdEmail')) permissions.push('ThirdEmail');
       }
+
       for (const emailKey of permissions) {
         if (selectedFilter === 'All' || selectedFilter === emailKey) {
           const data = await fetchPhotos[emailKey]();
@@ -91,6 +98,7 @@ const Home = () => {
       }
       setImages(all);
     };
+
     fetchImages();
   }, [user, selectedFilter]);
 
@@ -121,7 +129,10 @@ const Home = () => {
         </button>
       </div>
 
-      <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY} libraries={['visualization']}>
+      <LoadScript
+        googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+        libraries={libraries} // 👈 fixed: static array
+      >
         <GoogleMap
           key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}`}
           mapContainerStyle={containerStyle}
@@ -159,7 +170,9 @@ const Home = () => {
               <div className="w-fit max-w-sm p-2 rounded-md bg-white shadow-lg">
                 <img src={selectedImage.url} alt={selectedImage.name} className="w-full h-40 object-scale-down rounded" />
                 <div className="mt-2 text-sm space-y-1">
-                  <p className="text-gray-400"><span className="font-semibold text-black">GPS:</span> {selectedImage.latitude}, {selectedImage.longitude}</p>
+                  <p className="text-gray-400">
+                    <span className="font-semibold text-black">GPS:</span> {selectedImage.latitude}, {selectedImage.longitude}
+                  </p>
                   <div className="text-gray-400">
                     <p><span className="font-semibold text-black">District:</span> {selectedImage.district || '—'}</p>
                     <p><span className="font-semibold text-black">Village:</span> {selectedImage.village || '—'}</p>
