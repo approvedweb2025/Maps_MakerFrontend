@@ -28,6 +28,7 @@ const SecondEmail = () => {
         ...photo,
         year: new Date(photo.timestamp).getFullYear(),
         district: photo.district || "Unknown",
+        fullUrl: `${import.meta.env.VITE_BASE_URL}${photo.localPath}`, // 🟢 use localPath from backend
       }));
 
       setPhotos(enrichedPhotos);
@@ -76,11 +77,11 @@ const SecondEmail = () => {
         {images.slice(0, 6).map((photo) => (
           <img
             key={photo.fileId}
-            src={`${import.meta.env.VITE_BASE_URL}/uploads/${photo.fileId}.jpg`}
+            src={photo.fullUrl}
             alt={photo.name}
             className="rounded w-full h-28 object-cover cursor-pointer"
             onClick={() => {
-              setPreviewImage(`${import.meta.env.VITE_BASE_URL}/uploads/${photo.fileId}.jpg`);
+              setPreviewImage(photo.fullUrl);
               setIsFullscreen(false);
               setZoom(1);
             }}
@@ -154,11 +155,11 @@ const SecondEmail = () => {
               {modalPhotos.map((photo) => (
                 <img
                   key={photo.fileId}
-                  src={`${import.meta.env.VITE_BASE_URL}/uploads/${photo.fileId}.jpg`}
+                  src={photo.fullUrl}
                   alt={photo.name}
                   className="w-full h-32 object-cover rounded cursor-pointer"
                   onClick={() => {
-                    setPreviewImage(`${import.meta.env.VITE_BASE_URL}/uploads/${photo.fileId}.jpg`);
+                    setPreviewImage(photo.fullUrl);
                     setIsFullscreen(false);
                     setZoom(1);
                   }}
@@ -174,7 +175,9 @@ const SecondEmail = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
           <div
             className={`relative flex items-center justify-center ${
-              isFullscreen ? "w-screen h-screen" : "w-[300px] h-[300px] lg:w-[500px] lg:h-[500px]"
+              isFullscreen
+                ? "w-screen h-screen"
+                : "w-[300px] h-[300px] lg:w-[500px] lg:h-[500px]"
             }`}
           >
             <IoClose
