@@ -1,354 +1,1127 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { GoogleMap, LoadScript, Marker, HeatmapLayer } from '@react-google-maps/api';
+// import React, { useEffect, useState, useRef, useCallback } from 'react';
+// import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
+// import axios from 'axios';
+// import { darkMapStyle } from '../../utils/mapStyles';
+// import { useUser } from '../Context/UserContext';
+// import { FaDirections } from 'react-icons/fa';
+// import { useMap } from '../Context/MapContext';
+
+// const containerStyle = {
+//   width: '100%',
+//   height: '100vh',
+// };
+
+// const pakistanBounds = {
+//   north: 37.0,
+//   south: 23.5,
+//   west: 60.9,
+//   east: 77.0,
+// };
+
+// const getBase64Image = async (url) => {
+//   const res = await fetch(url);
+//   const blob = await res.blob();
+//   return new Promise((resolve) => {
+//     const reader = new FileReader();
+//     reader.onloadend = () => resolve(reader.result);
+//     reader.readAsDataURL(blob);
+//   });
+// };
+
+// const getColorByEmail = (email) => {
+//   switch (email) {
+//     case 'mhuzaifa8519@gmail.com':
+//       return '#3B82F6';
+//     case 'mhuzaifa86797@gmail.com':
+//       return '#10B981';
+//     case 'muhammadjig8@gmail.com':
+//       return '#F97316';
+//     default:
+//       return '#EF4444';
+//   }
+// };
+
+// const getCustomMarkerIcon = (base64Img, strokeColor) => {
+//   if (!window.google?.maps?.Size || !window.google?.maps?.Point) return null;
+
+//   const pin = `
+//     <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44">
+//       <circle cx="22" cy="22" r="20" fill="#ffffff" stroke="${strokeColor}" stroke-width="4"/>
+//       <clipPath id="circleView"><circle cx="22" cy="22" r="18" /></clipPath>
+//       <image href="${base64Img}" x="4" y="4" width="36" height="36" clip-path="url(#circleView)" preserveAspectRatio="xMidYMid slice"/>
+//     </svg>
+//   `;
+
+//   return {
+//     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(pin),
+//     scaledSize: new window.google.maps.Size(44, 44),
+//     anchor: new window.google.maps.Point(22, 22),
+//   };
+// };
+
+// const extractComponent = (components = [], type) => {
+//   const comp = components.find((c) => c.types.includes(type));
+//   return comp?.long_name;
+// };
+
+// const parsePlaceDetails = (components = []) => {
+//   // District in Pakistan often comes as administrative_area_level_2
+//   const district =
+//     extractComponent(components, 'administrative_area_level_2') ||
+//     extractComponent(components, 'administrative_area_level_1') ||
+//     '';
+//   // Tehsil sometimes in administrative_area_level_3 or sublocality
+//   const tehsil =
+//     extractComponent(components, 'administrative_area_level_3') ||
+//     extractComponent(components, 'sublocality_level_1') ||
+//     '';
+//   const place =
+//     extractComponent(components, 'locality') ||
+//     extractComponent(components, 'sublocality') ||
+//     extractComponent(components, 'neighborhood') ||
+//     '';
+//   const country = extractComponent(components, 'country') || '';
+//   return { district, tehsil, place, country };
+// };
+
+// const Home = () => {
+//   const [isDarkMode, setIsDarkMode] = useState(false);
+//   const [images, setImages] = useState([]);
+//   const [selectedImage, setSelectedImage] = useState(null);
+//   const [placeDetails, setPlaceDetails] = useState({
+//     district: '',
+//     place: '',
+//     tehsil: '',
+//     country: '',
+//   });
+//   const [mapReady, setMapReady] = useState(false);
+//   const [selectedFilter, setSelectedFilter] = useState('All');
+//   const [loadingLocation, setLoadingLocation] = useState(false);
+//   const { user } = useUser();
+//   const { mapCenter, mapZoom } = useMap();
+//   const geocodeCache = useRef(new Map());
+
+//   useEffect(() => {
+//     const observer = new MutationObserver(() => {
+//       setIsDarkMode(document.documentElement.classList.contains('dark'));
+//     });
+//     observer.observe(document.documentElement, {
+//       attributes: true,
+//       attributeFilter: ['class'],
+//     });
+//     setIsDarkMode(document.documentElement.classList.contains('dark'));
+//     return () => observer.disconnect();
+//   }, []);
+
+//   const fetchPhotos = {
+//     FirstEmail: async () => {
+//       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
+//       return await Promise.all(
+//         res.data.map(async (img) => {
+//           const base64Image = await getBase64Image(`${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`);
+//           return { ...img, base64Image };
+//         })
+//       );
+//     },
+//     SecondEmail: async () => {
+//       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
+//       return await Promise.all(
+//         res.data.map(async (img) => {
+//           const base64Image = await getBase64Image(`${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`);
+//           return { ...img, base64Image };
+//         })
+//       );
+//     },
+//     ThirdEmail: async () => {
+//       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
+//       return await Promise.all(
+//         res.data.map(async (img) => {
+//           const base64Image = await getBase64Image(`${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`);
+//           return { ...img, base64Image };
+//         })
+//       );
+//     },
+//   };
+
+//   useEffect(() => {
+//     const fetchImages = async () => {
+//       let all = [];
+//       const permissions = [];
+
+//       if (user?.role === 'admin') {
+//         permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
+//       } else {
+//         if (user?.permissions?.includes('FirstEmail')) permissions.push('FirstEmail');
+//         if (user?.permissions?.includes('SecondEmail')) permissions.push('SecondEmail');
+//         if (user?.permissions?.includes('ThirdEmail')) permissions.push('ThirdEmail');
+//       }
+
+//       for (const emailKey of permissions) {
+//         if (selectedFilter === 'All' || selectedFilter === emailKey) {
+//           const data = await fetchPhotos[emailKey]();
+//           all.push(...data);
+//         }
+//       }
+
+//       setImages(all);
+//     };
+
+//     fetchImages();
+//   }, [user, selectedFilter]);
+
+//   const fetchPlaceDetails = useCallback(
+//     async (latitude, longitude) => {
+//       const cacheKey = `${latitude},${longitude}`;
+//       if (geocodeCache.current.has(cacheKey)) {
+//         return geocodeCache.current.get(cacheKey);
+//       }
+
+//       try {
+//         setLoadingLocation(true);
+//         const res = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json`, {
+//           params: {
+//             latlng: `${latitude},${longitude}`,
+//             key: import.meta.env.VITE_GEOCODING_API_KEY,
+//           },
+//         });
+
+//         if (res.data.status === 'OK' && res.data.results?.length > 0) {
+//           const components = res.data.results[0].address_components || [];
+//           const parsed = parsePlaceDetails(components);
+//           geocodeCache.current.set(cacheKey, parsed);
+//           return parsed;
+//         }
+//         return {
+//           district: '',
+//           place: 'Unknown Location',
+//           tehsil: '',
+//           country: '',
+//         };
+//       } catch (e) {
+//         return {
+//           district: '',
+//           place: 'Error fetching location',
+//           tehsil: '',
+//           country: '',
+//         };
+//       } finally {
+//         setLoadingLocation(false);
+//       }
+//     },
+//     []
+//   );
+
+//   useEffect(() => {
+//     if (!selectedImage) {
+//       setPlaceDetails({
+//         district: '',
+//         place: '',
+//         tehsil: '',
+//         country: '',
+//       });
+//       return;
+//     }
+
+//     const doFetch = async () => {
+//       const { latitude, longitude } = selectedImage;
+//       const details = await fetchPlaceDetails(latitude, longitude);
+//       setPlaceDetails(details);
+//     };
+
+//     doFetch();
+//   }, [selectedImage, fetchPlaceDetails]);
+
+//   const filters = ['All'];
+//   if (user?.role === 'admin' || user?.permissions?.includes('FirstEmail')) filters.push('FirstEmail');
+//   if (user?.role === 'admin' || user?.permissions?.includes('SecondEmail')) filters.push('SecondEmail');
+//   if (user?.role === 'admin' || user?.permissions?.includes('ThirdEmail')) filters.push('ThirdEmail');
+
+//   return (
+//     <div className="h-screen w-full relative">
+//       <div className="absolute z-10 lg:top-2 top-[80%] left-44 lg:left-1/2  w-60 transform -translate-x-1/2 bg-transparent p-2 rounded shadow-md">
+//         <select
+//           value={selectedFilter}
+//           onChange={(e) => setSelectedFilter(e.target.value)}
+//           className="border px-3 py-1 w-full dark:bg-zinc-800 bg-white dark:text-white text-black text-center rounded text-sm"
+//         >
+//           {filters.map((f) => (
+//             <option key={f} value={f}>
+//               {f}
+//             </option>
+//           ))}
+//         </select>
+//       </div>
+
+//       <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+//         <GoogleMap
+//           key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}`}
+//           mapContainerStyle={containerStyle}
+//           center={mapCenter}
+//           zoom={mapZoom}
+//           onLoad={() => setMapReady(true)}
+//           options={{
+//             styles: isDarkMode ? darkMapStyle : undefined,
+//             disableDefaultUI: false,
+//             scrollwheel: true,
+//             gestureHandling: 'greedy',
+//             restriction: { latLngBounds: pakistanBounds, strictBounds: true },
+//           }}
+//         >
+//           {mapReady &&
+//             images.map((img, index) => {
+//               const color = getColorByEmail(img.uploadedBy);
+//               const icon = getCustomMarkerIcon(img.base64Image, color);
+//               if (!icon) return null;
+//               return (
+//                 <Marker
+//                   key={index}
+//                   position={{ lat: img.latitude, lng: img.longitude }}
+//                   icon={icon}
+//                   onClick={() => setSelectedImage(img)}
+//                 />
+//               );
+//             })}
+
+//           {selectedImage && (
+//             <InfoWindow
+//               position={{
+//                 lat: selectedImage.latitude,
+//                 lng: selectedImage.longitude,
+//               }}
+//               onCloseClick={() => {
+//                 setSelectedImage(null);
+//                 setPlaceDetails({
+//                   district: '',
+//                   place: '',
+//                   tehsil: '',
+//                   country: '',
+//                 });
+//               }}
+//             >
+//               <div className="w-fit max-w-sm p-2 rounded-md bg-white shadow-lg">
+//                 <img
+//                   src={`${import.meta.env.VITE_BASE_URL}/uploads/${selectedImage.fileId}.jpg`}
+//                   alt={selectedImage.name}
+//                   className="w-full h-40 object-cover rounded"
+//                 />
+//                 <div className="mt-2 text-sm space-y-1">
+//                   <p className="text-gray-400 flex gap-2 items-center">
+//                     <span className="font-semibold text-black flex">GPS:</span>{' '}
+//                     <span className="flex items-center justify-center gap-3">
+//                       {selectedImage.latitude}, {selectedImage.longitude}
+//                     </span>
+//                   </p>
+
+//                   <div className="text-gray-400">
+//                     {loadingLocation ? (
+//                       <p className="text-sm">Loading location...</p>
+//                     ) : (
+//                       <>
+//                         <p>
+//                           <span className="font-semibold text-black">District Name:</span>{' '}
+//                           {placeDetails.district || '—'}
+//                         </p>
+//                         <p>
+//                           <span className="font-semibold text-black">Village Name:</span>{' '}
+//                           {placeDetails.place || '—'}
+//                         </p>
+//                         <p>
+//                           <span className="font-semibold text-black">Tehsil Name:</span>{' '}
+//                           {placeDetails.tehsil || '—'}
+//                         </p>
+//                         <p>
+//                           <span className="font-semibold text-black">Country:</span>{' '}
+//                           {placeDetails.country || '—'}
+//                         </p>
+
+//                         <p>
+//                           Uploaded: {new Date(selectedImage.timestamp).toLocaleDateString()}
+//                         </p>
+//                       </>
+//                     )}
+//                   </div>
+
+//                   <p className="text-xs text-gray-400">
+//                     <span className="uppercase font-semibold text-black">Uploaded by:</span>{' '}
+//                     {selectedImage.uploadedBy}
+//                   </p>
+
+//                   <a
+//                     href={`https://www.google.com/maps/dir/?api=1&destination=${selectedImage.latitude},${selectedImage.longitude}`}
+//                     target="_blank"
+//                     rel="noopener noreferrer"
+//                     className="mt-2 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded"
+//                   >
+//                     Get Directions
+//                     <FaDirections />
+//                   </a>
+//                 </div>
+//               </div>
+//             </InfoWindow>
+//           )}
+//         </GoogleMap>
+//       </LoadScript>
+//     </div>
+//   );
+// };
+
+// export default Home;
+
+
+// import React, { useEffect, useState, useRef, useCallback } from 'react';
+// import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
+// import axios from 'axios';
+// import { darkMapStyle } from '../../utils/mapStyles';
+// import { useUser } from '../Context/UserContext';
+// import { FaDirections } from 'react-icons/fa';
+// import { useMap } from '../Context/MapContext';
+
+// const containerStyle = {
+//   width: '100%',
+//   height: '100vh',
+// };
+
+// const pakistanBounds = {
+//   north: 37.0,
+//   south: 23.5,
+//   west: 60.9,
+//   east: 77.0,
+// };
+
+// // address parsing helpers
+// const extractComponent = (components = [], type) => {
+//   const comp = components.find((c) => c.types.includes(type));
+//   return comp?.long_name;
+// };
+
+// const parsePlaceDetails = (components = []) => {
+//   const district =
+//     extractComponent(components, 'administrative_area_level_2') ||
+//     extractComponent(components, 'administrative_area_level_1') ||
+//     '';
+//   const tehsil =
+//     extractComponent(components, 'administrative_area_level_3') ||
+//     extractComponent(components, 'sublocality_level_1') ||
+//     '';
+//   const place =
+//     extractComponent(components, 'locality') ||
+//     extractComponent(components, 'sublocality') ||
+//     extractComponent(components, 'neighborhood') ||
+//     '';
+//   const country = extractComponent(components, 'country') || '';
+//   return { district, tehsil, place, country };
+// };
+
+// // marker colors
+// const markerIcons = {
+//   FirstEmail: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",   // 🔵
+//   SecondEmail: "http://maps.google.com/mapfiles/ms/icons/green-dot.png", // 🟢
+//   ThirdEmail: "http://maps.google.com/mapfiles/ms/icons/orange-dot.png", // 🟠
+// };
+
+// const Home = () => {
+//   const [isDarkMode, setIsDarkMode] = useState(false);
+//   const [images, setImages] = useState([]);
+//   const [selectedImage, setSelectedImage] = useState(null);
+//   const [placeDetails, setPlaceDetails] = useState({
+//     district: '',
+//     place: '',
+//     tehsil: '',
+//     country: '',
+//   });
+//   const [mapReady, setMapReady] = useState(false);
+//   const [selectedFilter, setSelectedFilter] = useState('All');
+//   const [loadingLocation, setLoadingLocation] = useState(false);
+//   const { user } = useUser();
+//   const { mapCenter, mapZoom } = useMap();
+//   const geocodeCache = useRef(new Map());
+
+//   // dark mode sync
+//   useEffect(() => {
+//     const observer = new MutationObserver(() => {
+//       setIsDarkMode(document.documentElement.classList.contains('dark'));
+//     });
+//     observer.observe(document.documentElement, {
+//       attributes: true,
+//       attributeFilter: ['class'],
+//     });
+//     setIsDarkMode(document.documentElement.classList.contains('dark'));
+//     return () => observer.disconnect();
+//   }, []);
+
+//   // API calls for images
+//   const fetchPhotos = {
+//     FirstEmail: async () => {
+//       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
+//       return res.data.map((img) => ({
+//         ...img,
+//         emailKey: 'FirstEmail',
+//         url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`,
+//       }));
+//     },
+//     SecondEmail: async () => {
+//       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
+//       return res.data.map((img) => ({
+//         ...img,
+//         emailKey: 'SecondEmail',
+//         url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`,
+//       }));
+//     },
+//     ThirdEmail: async () => {
+//       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
+//       return res.data.map((img) => ({
+//         ...img,
+//         emailKey: 'ThirdEmail',
+//         url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`,
+//       }));
+//     },
+//   };
+
+//   // fetch based on user permissions
+//   useEffect(() => {
+//     const fetchImages = async () => {
+//       let all = [];
+//       const permissions = [];
+
+//       if (user?.role === 'admin') {
+//         permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
+//       } else {
+//         if (user?.permissions?.includes('FirstEmail')) permissions.push('FirstEmail');
+//         if (user?.permissions?.includes('SecondEmail')) permissions.push('SecondEmail');
+//         if (user?.permissions?.includes('ThirdEmail')) permissions.push('ThirdEmail');
+//       }
+
+//       for (const emailKey of permissions) {
+//         if (selectedFilter === 'All' || selectedFilter === emailKey) {
+//           const data = await fetchPhotos[emailKey]();
+//           all.push(...data);
+//         }
+//       }
+
+//       setImages(all);
+//     };
+
+//     fetchImages();
+//   }, [user, selectedFilter]);
+
+//   // fetch location details
+//   const fetchPlaceDetails = useCallback(
+//     async (latitude, longitude) => {
+//       const cacheKey = `${latitude},${longitude}`;
+//       if (geocodeCache.current.has(cacheKey)) {
+//         return geocodeCache.current.get(cacheKey);
+//       }
+
+//       try {
+//         setLoadingLocation(true);
+//         const res = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json`, {
+//           params: {
+//             latlng: `${latitude},${longitude}`,
+//             key: import.meta.env.VITE_GEOCODING_API_KEY,
+//           },
+//         });
+
+//         if (res.data.status === 'OK' && res.data.results?.length > 0) {
+//           const components = res.data.results[0].address_components || [];
+//           const parsed = parsePlaceDetails(components);
+//           geocodeCache.current.set(cacheKey, parsed);
+//           return parsed;
+//         }
+//         return { district: '', place: 'Unknown Location', tehsil: '', country: '' };
+//       } catch (e) {
+//         return { district: '', place: 'Error fetching location', tehsil: '', country: '' };
+//       } finally {
+//         setLoadingLocation(false);
+//       }
+//     },
+//     []
+//   );
+
+//   // update details when marker selected
+//   useEffect(() => {
+//     if (!selectedImage) {
+//       setPlaceDetails({ district: '', place: '', tehsil: '', country: '' });
+//       return;
+//     }
+
+//     const doFetch = async () => {
+//       const { latitude, longitude } = selectedImage;
+//       const details = await fetchPlaceDetails(latitude, longitude);
+//       setPlaceDetails(details);
+//     };
+
+//     doFetch();
+//   }, [selectedImage, fetchPlaceDetails]);
+
+//   // filter dropdown
+//   const filters = ['All'];
+//   if (user?.role === 'admin' || user?.permissions?.includes('FirstEmail')) filters.push('FirstEmail');
+//   if (user?.role === 'admin' || user?.permissions?.includes('SecondEmail')) filters.push('SecondEmail');
+//   if (user?.role === 'admin' || user?.permissions?.includes('ThirdEmail')) filters.push('ThirdEmail');
+
+//   return (
+//     <div className="h-screen w-full relative">
+//       {/* filter dropdown */}
+//       <div className="absolute z-10 lg:top-2 top-[80%] left-44 lg:left-1/2 w-60 transform -translate-x-1/2 bg-transparent p-2 rounded shadow-md">
+//         <select
+//           value={selectedFilter}
+//           onChange={(e) => setSelectedFilter(e.target.value)}
+//           className="border px-3 py-1 w-full dark:bg-zinc-800 bg-white dark:text-white text-black text-center rounded text-sm"
+//         >
+//           {filters.map((f) => (
+//             <option key={f} value={f}>
+//               {f}
+//             </option>
+//           ))}
+//         </select>
+//       </div>
+
+//       <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+//         <GoogleMap
+//           key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}`}
+//           mapContainerStyle={containerStyle}
+//           center={mapCenter}
+//           zoom={mapZoom}
+//           onLoad={() => setMapReady(true)}
+//           options={{
+//             styles: isDarkMode ? darkMapStyle : undefined,
+//             disableDefaultUI: false,
+//             restriction: { latLngBounds: pakistanBounds, strictBounds: true },
+//           }}
+//         >
+//           {/* markers with colored pins */}
+//           {mapReady &&
+//             images.map((img, index) => (
+//               <Marker
+//                 key={index}
+//                 position={{ lat: img.latitude, lng: img.longitude }}
+//                 onClick={() => setSelectedImage(img)}
+//                 icon={markerIcons[img.emailKey] || markerIcons.FirstEmail}
+//               />
+//             ))}
+
+//           {/* info window */}
+//           {selectedImage && (
+//             <InfoWindow
+//               position={{ lat: selectedImage.latitude, lng: selectedImage.longitude }}
+//               onCloseClick={() => {
+//                 setSelectedImage(null);
+//                 setPlaceDetails({ district: '', place: '', tehsil: '', country: '' });
+//               }}
+//             >
+//               <div className="w-fit max-w-sm p-2 rounded-md bg-white shadow-lg">
+//                 <img
+//                   src={selectedImage.url}
+//                   alt={selectedImage.name}
+//                   className="w-full h-40 object-scale-down rounded"
+//                 />
+//                 <div className="mt-2 text-sm space-y-1">
+//                   <p className="text-gray-400 flex gap-2 items-center">
+//                     <span className="font-semibold text-black flex">GPS:</span>{' '}
+//                     <span className="flex items-center justify-center gap-3">
+//                       {selectedImage.latitude}, {selectedImage.longitude}
+//                     </span>
+//                   </p>
+
+//                   <div className="text-gray-400">
+//                     {loadingLocation ? (
+//                       <p className="text-sm">Loading location...</p>
+//                     ) : (
+//                       <>
+//                         <p><span className="font-semibold text-black">District Name:</span> {placeDetails.district || '—'}</p>
+//                         <p><span className="font-semibold text-black">Village Name:</span> {placeDetails.place || '—'}</p>
+//                         <p><span className="font-semibold text-black">Tehsil Name:</span> {placeDetails.tehsil || '—'}</p>
+//                         <p><span className="font-semibold text-black">Country:</span> {placeDetails.country || '—'}</p>
+//                       </>
+//                     )}
+//                   </div>
+
+//                   <p className="text-xs text-gray-400">
+//                     <span className="uppercase font-semibold text-black">Uploaded by:</span> {selectedImage.uploadedBy}
+//                   </p>
+
+//                   <a
+//                     href={`https://www.google.com/maps/dir/?api=1&destination=${selectedImage.latitude},${selectedImage.longitude}`}
+//                     target="_blank"
+//                     rel="noopener noreferrer"
+//                     className="mt-2 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded"
+//                   >
+//                     Get Directions
+//                     <FaDirections />
+//                   </a>
+//                 </div>
+//               </div>
+//             </InfoWindow>
+//           )}
+//         </GoogleMap>
+//       </LoadScript>
+//     </div>
+//   );
+// };
+
+// export default Home;
+
+
+// import React, { useEffect, useState, useRef, useCallback } from 'react';
+// import { GoogleMap, LoadScript, Marker, InfoWindow, HeatmapLayer } from '@react-google-maps/api';
+// import axios from 'axios';
+// import { useUser } from '../Context/UserContext';
+// import { FaDirections } from 'react-icons/fa';
+// import { useMap } from '../Context/MapContext';
+
+// const containerStyle = { width: '100%', height: '100vh' };
+// const pakistanBounds = { north: 37.0, south: 23.5, west: 60.9, east: 77.0 };
+
+// // Dark map style
+// const darkMapStyle = [
+//   { "featureType": "all", "elementType": "geometry", "stylers": [{ "color": "#1e1e1e" }] },
+//   { "featureType": "all", "elementType": "labels.text.fill", "stylers": [{ "color": "#ffffff" }] },
+//   { "featureType": "all", "elementType": "labels.text.stroke", "stylers": [{ "color": "#000000" }, { "weight": 2 }] },
+//   { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#2c2c2c" }] },
+//   { "featureType": "road", "elementType": "geometry.stroke", "stylers": [{ "color": "#3a3a3a" }] },
+//   { "featureType": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#ffffff" }] },
+//   { "featureType": "administrative", "elementType": "geometry", "stylers": [{ "color": "#444444" }] },
+//   { "featureType": "poi", "elementType": "geometry", "stylers": [{ "color": "#2c2c2c" }] },
+//   { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#0e1626" }] }
+// ];
+
+// // Marker icons
+// const markerIcons = {
+//   FirstEmail: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+//   SecondEmail: "http://maps.google.com/mapfiles/ms/icons/green-dot.png",
+//   ThirdEmail: "http://maps.google.com/mapfiles/ms/icons/orange-dot.png",
+// };
+
+// // Address parsing helpers
+// const extractComponent = (components = [], type) => components.find(c => c.types.includes(type))?.long_name;
+// const parsePlaceDetails = (components = []) => {
+//   const district = extractComponent(components, 'administrative_area_level_2') || extractComponent(components, 'administrative_area_level_1') || '';
+//   const tehsil = extractComponent(components, 'administrative_area_level_3') || extractComponent(components, 'sublocality_level_1') || '';
+//   const place = extractComponent(components, 'locality') || extractComponent(components, 'sublocality') || extractComponent(components, 'neighborhood') || '';
+//   const country = extractComponent(components, 'country') || '';
+//   return { district, tehsil, place, country };
+// };
+
+// const Home = () => {
+//   const [isDarkMode, setIsDarkMode] = useState(false);
+//   const [images, setImages] = useState([]);
+//   const [selectedImage, setSelectedImage] = useState(null);
+//   const [placeDetails, setPlaceDetails] = useState({ district: '', place: '', tehsil: '', country: '' });
+//   const [mapReady, setMapReady] = useState(false);
+//   const [selectedFilter, setSelectedFilter] = useState('All');
+//   const [loadingLocation, setLoadingLocation] = useState(false);
+//   const [showHeatmap, setShowHeatmap] = useState(false);
+//   const { user } = useUser();
+//   const { mapCenter, mapZoom } = useMap();
+//   const geocodeCache = useRef(new Map());
+
+//   // Dark mode sync
+//   useEffect(() => {
+//     const observer = new MutationObserver(() => setIsDarkMode(document.documentElement.classList.contains('dark')));
+//     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+//     setIsDarkMode(document.documentElement.classList.contains('dark'));
+//     return () => observer.disconnect();
+//   }, []);
+
+//   // Fetch images
+//   const fetchPhotos = {
+//     FirstEmail: async () => {
+//       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
+//       return res.data.map(img => ({ ...img, emailKey: 'FirstEmail', url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg` }));
+//     },
+//     SecondEmail: async () => {
+//       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
+//       return res.data.map(img => ({ ...img, emailKey: 'SecondEmail', url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg` }));
+//     },
+//     ThirdEmail: async () => {
+//       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
+//       return res.data.map(img => ({ ...img, emailKey: 'ThirdEmail', url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg` }));
+//     },
+//   };
+
+//   useEffect(() => {
+//     const fetchImages = async () => {
+//       let all = [];
+//       const permissions = [];
+//       if (user?.role === 'admin') permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
+//       else {
+//         if (user?.permissions?.includes('FirstEmail')) permissions.push('FirstEmail');
+//         if (user?.permissions?.includes('SecondEmail')) permissions.push('SecondEmail');
+//         if (user?.permissions?.includes('ThirdEmail')) permissions.push('ThirdEmail');
+//       }
+//       for (const emailKey of permissions) {
+//         if (selectedFilter === 'All' || selectedFilter === emailKey) {
+//           const data = await fetchPhotos[emailKey]();
+//           all.push(...data);
+//         }
+//       }
+//       setImages(all);
+//     };
+//     fetchImages();
+//   }, [user, selectedFilter]);
+
+//   const fetchPlaceDetails = useCallback(async (latitude, longitude) => {
+//     const cacheKey = `${latitude},${longitude}`;
+//     if (geocodeCache.current.has(cacheKey)) return geocodeCache.current.get(cacheKey);
+//     try {
+//       setLoadingLocation(true);
+//       const res = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', { params: { latlng: `${latitude},${longitude}`, key: import.meta.env.VITE_GEOCODING_API_KEY } });
+//       if (res.data.status === 'OK' && res.data.results.length > 0) {
+//         const parsed = parsePlaceDetails(res.data.results[0].address_components || []);
+//         geocodeCache.current.set(cacheKey, parsed);
+//         return parsed;
+//       }
+//       return { district: '', place: 'Unknown Location', tehsil: '', country: '' };
+//     } catch {
+//       return { district: '', place: 'Error fetching location', tehsil: '', country: '' };
+//     } finally { setLoadingLocation(false); }
+//   }, []);
+
+//   useEffect(() => {
+//     if (!selectedImage) { setPlaceDetails({ district: '', place: '', tehsil: '', country: '' }); return; }
+//     const doFetch = async () => { const details = await fetchPlaceDetails(selectedImage.latitude, selectedImage.longitude); setPlaceDetails(details); };
+//     doFetch();
+//   }, [selectedImage, fetchPlaceDetails]);
+
+//   const filters = ['All'];
+//   if (user?.role === 'admin' || user?.permissions?.includes('FirstEmail')) filters.push('FirstEmail');
+//   if (user?.role === 'admin' || user?.permissions?.includes('SecondEmail')) filters.push('SecondEmail');
+//   if (user?.role === 'admin' || user?.permissions?.includes('ThirdEmail')) filters.push('ThirdEmail');
+
+//   // Heatmap data
+//   const heatmapData = images.map(img => new window.google.maps.LatLng(img.latitude, img.longitude));
+
+//   return (
+//     <div className="h-screen w-full relative">
+//       {/* Top center controls */}
+//       <div className="absolute z-10 top-2 left-1/2 transform -translate-x-1/2 flex gap-2 bg-transparent p-2 rounded shadow-md">
+//         {/* Filter dropdown */}
+//         <select value={selectedFilter} onChange={(e) => setSelectedFilter(e.target.value)} className="border px-3 py-1 dark:bg-zinc-800 bg-white dark:text-white text-black text-center rounded text-sm">
+//           {filters.map(f => <option key={f} value={f}>{f}</option>)}
+//         </select>
+
+//         {/* Heatmap toggle button */}
+//         <button onClick={() => setShowHeatmap(!showHeatmap)} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+//           {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
+//         </button>
+//       </div>
+
+//       <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY} libraries={['visualization']}>
+//         <GoogleMap
+//           key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}`}
+//           mapContainerStyle={containerStyle}
+//           center={mapCenter}
+//           zoom={mapZoom}
+//           onLoad={() => setMapReady(true)}
+//           options={{ styles: isDarkMode ? darkMapStyle : undefined, disableDefaultUI: false, restriction: { latLngBounds: pakistanBounds, strictBounds: true }, gestureHandling: 'greedy' }}
+//         >
+//           {/* Markers */}
+//           {mapReady && images.map((img, index) => (
+//             <Marker key={index} position={{ lat: img.latitude, lng: img.longitude }} onClick={() => setSelectedImage(img)} icon={markerIcons[img.emailKey] || markerIcons.FirstEmail} />
+//           ))}
+
+//           {/* Heatmap */}
+//           {mapReady && showHeatmap && heatmapData.length > 0 && <HeatmapLayer data={heatmapData} options={{ radius: 50 }} />}
+
+//           {/* InfoWindow */}
+//           {selectedImage && (
+//             <InfoWindow position={{ lat: selectedImage.latitude, lng: selectedImage.longitude }} onCloseClick={() => { setSelectedImage(null); setPlaceDetails({ district: '', place: '', tehsil: '', country: '' }); }}>
+//               <div className="w-fit max-w-sm p-2 rounded-md bg-white shadow-lg">
+//                 <img src={selectedImage.url} alt={selectedImage.name} className="w-full h-40 object-scale-down rounded" />
+//                 <div className="mt-2 text-sm space-y-1">
+//                   <p className="text-gray-400 flex gap-2 items-center"><span className="font-semibold text-black flex">GPS:</span> {selectedImage.latitude}, {selectedImage.longitude}</p>
+//                   <div className="text-gray-400">
+//                     {loadingLocation ? <p className="text-sm">Loading location...</p> :
+//                       <>
+//                         <p><span className="font-semibold text-black">District Name:</span> {placeDetails.district || '—'}</p>
+//                         <p><span className="font-semibold text-black">Village Name:</span> {placeDetails.place || '—'}</p>
+//                         <p><span className="font-semibold text-black">Tehsil Name:</span> {placeDetails.tehsil || '—'}</p>
+//                         <p><span className="font-semibold text-black">Country:</span> {placeDetails.country || '—'}</p>
+//                       </>}
+//                   </div>
+//                   <p className="text-xs text-gray-400"><span className="uppercase font-semibold text-black">Uploaded by:</span> {selectedImage.uploadedBy}</p>
+//                   <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedImage.latitude},${selectedImage.longitude}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded">Get Directions <FaDirections /></a>
+//                 </div>
+//               </div>
+//             </InfoWindow>
+//           )}
+//         </GoogleMap>
+//       </LoadScript>
+//     </div>
+//   );
+// };
+
+// export default Home;
+
+
+// import React, { useEffect, useState } from 'react';
+// import { GoogleMap, LoadScript, Marker, InfoWindow, HeatmapLayer } from '@react-google-maps/api';
+// import axios from 'axios';
+// import { useUser } from '../Context/UserContext';
+// import { FaDirections } from 'react-icons/fa';
+// import { useMap } from '../Context/MapContext';
+
+// const containerStyle = { width: '100%', height: '100vh' };
+// const pakistanBounds = { north: 37.0, south: 23.5, west: 60.9, east: 77.0 };
+
+// // Dark map style
+// const darkMapStyle = [
+//   { featureType: "all", elementType: "geometry", stylers: [{ color: "#1e1e1e" }] },
+//   { featureType: "all", elementType: "labels.text.fill", stylers: [{ color: "#ffffff" }] },
+//   { featureType: "all", elementType: "labels.text.stroke", stylers: [{ color: "#000000" }, { weight: 2 }] },
+//   { featureType: "road", elementType: "geometry", stylers: [{ color: "#2c2c2c" }] },
+//   { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#3a3a3a" }] },
+//   { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#ffffff" }] },
+//   { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#444444" }] },
+//   { featureType: "poi", elementType: "geometry", stylers: [{ color: "#2c2c2c" }] },
+//   { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e1626" }] }
+// ];
+
+// // Marker icons
+// const markerIcons = {
+//   FirstEmail: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+//   SecondEmail: "http://maps.google.com/mapfiles/ms/icons/green-dot.png",
+//   ThirdEmail: "http://maps.google.com/mapfiles/ms/icons/orange-dot.png",
+// };
+
+// const Home = () => {
+//   const [isDarkMode, setIsDarkMode] = useState(false);
+//   const [images, setImages] = useState([]);
+//   const [selectedImage, setSelectedImage] = useState(null);
+//   const [mapReady, setMapReady] = useState(false);
+//   const [selectedFilter, setSelectedFilter] = useState('All');
+//   const [showHeatmap, setShowHeatmap] = useState(false);
+//   const { user } = useUser();
+//   const { mapCenter, mapZoom } = useMap();
+
+//   // Dark mode sync
+//   useEffect(() => {
+//     const observer = new MutationObserver(() =>
+//       setIsDarkMode(document.documentElement.classList.contains('dark'))
+//     );
+//     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+//     setIsDarkMode(document.documentElement.classList.contains('dark'));
+//     return () => observer.disconnect();
+//   }, []);
+
+//   // Fetch images from backend (already contains location fields)
+//   const fetchPhotos = {
+//     FirstEmail: async () => {
+//       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
+//       return res.data.map(img => ({
+//         ...img,
+//         emailKey: 'FirstEmail',
+//         url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`
+//       }));
+//     },
+//     SecondEmail: async () => {
+//       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
+//       return res.data.map(img => ({
+//         ...img,
+//         emailKey: 'SecondEmail',
+//         url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`
+//       }));
+//     },
+//     ThirdEmail: async () => {
+//       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
+//       return res.data.map(img => ({
+//         ...img,
+//         emailKey: 'ThirdEmail',
+//         url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`
+//       }));
+//     },
+//   };
+
+//   useEffect(() => {
+//     const fetchImages = async () => {
+//       let all = [];
+//       const permissions = [];
+//       if (user?.role === 'admin') permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
+//       else {
+//         if (user?.permissions?.includes('FirstEmail')) permissions.push('FirstEmail');
+//         if (user?.permissions?.includes('SecondEmail')) permissions.push('SecondEmail');
+//         if (user?.permissions?.includes('ThirdEmail')) permissions.push('ThirdEmail');
+//       }
+//       for (const emailKey of permissions) {
+//         if (selectedFilter === 'All' || selectedFilter === emailKey) {
+//           const data = await fetchPhotos[emailKey]();
+//           all.push(...data);
+//         }
+//       }
+//       setImages(all);
+//     };
+//     fetchImages();
+//   }, [user, selectedFilter]);
+
+//   const filters = ['All'];
+//   if (user?.role === 'admin' || user?.permissions?.includes('FirstEmail')) filters.push('FirstEmail');
+//   if (user?.role === 'admin' || user?.permissions?.includes('SecondEmail')) filters.push('SecondEmail');
+//   if (user?.role === 'admin' || user?.permissions?.includes('ThirdEmail')) filters.push('ThirdEmail');
+
+//   // Heatmap data
+//   const heatmapData = images.map(img => new window.google.maps.LatLng(img.latitude, img.longitude));
+
+//   return (
+//     <div className="h-screen w-full relative">
+//       {/* Top controls */}
+//       <div className="absolute z-10 top-2 left-1/2 transform -translate-x-1/2 flex gap-2 p-2">
+//         <select
+//           value={selectedFilter}
+//           onChange={(e) => setSelectedFilter(e.target.value)}
+//           className="border px-3 py-1 dark:bg-zinc-800 bg-white dark:text-white text-black text-center rounded text-sm"
+//         >
+//           {filters.map(f => <option key={f} value={f}>{f}</option>)}
+//         </select>
+
+//         <button
+//           onClick={() => setShowHeatmap(!showHeatmap)}
+//           className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+//         >
+//           {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
+//         </button>
+//       </div>
+
+//       <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY} libraries={['visualization']}>
+//         <GoogleMap
+//           key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}`}
+//           mapContainerStyle={containerStyle}
+//           center={mapCenter}
+//           zoom={mapZoom}
+//           onLoad={() => setMapReady(true)}
+//           options={{
+//             styles: isDarkMode ? darkMapStyle : undefined,
+//             disableDefaultUI: false,
+//             restriction: { latLngBounds: pakistanBounds, strictBounds: true },
+//             gestureHandling: 'greedy'
+//           }}
+//         >
+//           {/* Markers */}
+//           {mapReady && images.map((img, index) => (
+//             <Marker
+//               key={index}
+//               position={{ lat: img.latitude, lng: img.longitude }}
+//               onClick={() => setSelectedImage(img)}
+//               icon={markerIcons[img.emailKey] || markerIcons.FirstEmail}
+//             />
+//           ))}
+
+//           {/* Heatmap */}
+//           {mapReady && showHeatmap && heatmapData.length > 0 && (
+//             <HeatmapLayer data={heatmapData} options={{ radius: 50 }} />
+//           )}
+
+//           {/* InfoWindow */}
+//           {selectedImage && (
+//             <InfoWindow
+//               position={{ lat: selectedImage.latitude, lng: selectedImage.longitude }}
+//               onCloseClick={() => setSelectedImage(null)}
+//             >
+//               <div className="w-fit max-w-sm p-2 rounded-md bg-white shadow-lg">
+//                 <img src={selectedImage.url} alt={selectedImage.name} className="w-full h-40 object-scale-down rounded" />
+//                 <div className="mt-2 text-sm space-y-1">
+//                   <p className="text-gray-400"><span className="font-semibold text-black">GPS:</span> {selectedImage.latitude}, {selectedImage.longitude}</p>
+//                   <div className="text-gray-400">
+//                     <p><span className="font-semibold text-black">District Name:</span> {selectedImage.district || '—'}</p>
+//                     <p><span className="font-semibold text-black">Village Name:</span> {selectedImage.village || '—'}</p>
+//                     <p><span className="font-semibold text-black">Tehsil Name:</span> {selectedImage.tehsil || '—'}</p>
+//                     <p><span className="font-semibold text-black">Country:</span> {selectedImage.country || '—'}</p>
+//                   </div>
+//                   <p className="text-xs text-gray-400">
+//                     <span className="uppercase font-semibold text-black">Uploaded by:</span> {selectedImage.uploadedBy}
+//                   </p>
+//                   <a
+//                     href={`https://www.google.com/maps/dir/?api=1&destination=${selectedImage.latitude},${selectedImage.longitude}`}
+//                     target="_blank"
+//                     rel="noopener noreferrer"
+//                     className="mt-2 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded"
+//                   >
+//                     Get Directions <FaDirections />
+//                   </a>
+//                 </div>
+//               </div>
+//             </InfoWindow>
+//           )}
+//         </GoogleMap>
+//       </LoadScript>
+//     </div>
+//   );
+// };
+
+// export default Home;
+
+
+import React, { useEffect, useState } from 'react';
+import { GoogleMap, LoadScript, Marker, InfoWindow, HeatmapLayer } from '@react-google-maps/api';
 import axios from 'axios';
 import { useUser } from '../Context/UserContext';
-import { FaDirections, FaBell, FaTimes, FaArrowLeft, FaArrowRight, FaPlus, FaMinus, FaUndo } from 'react-icons/fa';
+import { FaDirections } from 'react-icons/fa';
 import { useMap } from '../Context/MapContext';
 
 const containerStyle = { width: '100%', height: '100vh' };
 const pakistanBounds = { north: 37.0, south: 23.5, west: 60.9, east: 77.0 };
-const GEOTAG_PRECISION = 5; // Decimal places for rounding (approx. 1 meter precision)
 
-// Dark map style
 const darkMapStyle = [
-  { "featureType": "all", "elementType": "geometry", "stylers": [{ "color": "#1e1e1e" }] },
-  { "featureType": "all", "elementType": "labels.text.fill", "stylers": [{ "color": "#ffffff" }] },
-  { "featureType": "all", "elementType": "labels.text.stroke", "stylers": [{ "color": "#000000" }, { "weight": 2 }] },
-  { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#2c2c2c" }] },
-  { "featureType": "road", "elementType": "geometry.stroke", "stylers": [{ "color": "#3a3a3a" }] },
-  { "featureType": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#ffffff" }] },
-  { "featureType": "administrative", "elementType": "geometry", "stylers": [{ "color": "#444444" }] },
-  { "featureType": "poi", "elementType": "geometry", "stylers": [{ "color": "#2c2c2c" }] },
-  { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#0e1626" }] }
+  { featureType: "all", elementType: "geometry", stylers: [{ color: "#1e1e1e" }] },
+  { featureType: "all", elementType: "labels.text.fill", stylers: [{ color: "#ffffff" }] },
+  { featureType: "all", elementType: "labels.text.stroke", stylers: [{ color: "#000000" }, { weight: 2 }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#2c2c2c" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#3a3a3a" }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#ffffff" }] },
+  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#444444" }] },
+  { featureType: "poi", elementType: "geometry", stylers: [{ color: "#2c2c2c" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e1626" }] }
 ];
 
-// Marker icons
 const markerIcons = {
   FirstEmail: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-  SecondEmail: "http://maps.google.com/mapfiles/kml/pal3/icon21.png",
+  SecondEmail: "http://maps.google.com/mapfiles/ms/icons/green-dot.png",
   ThirdEmail: "http://maps.google.com/mapfiles/ms/icons/orange-dot.png",
-};
-
-// Address parsing helpers
-const extractComponent = (components = [], type) => components.find(c => c.types.includes(type))?.long_name;
-const parsePlaceDetails = (components = []) => {
-  const district = extractComponent(components, 'administrative_area_level_2') || extractComponent(components, 'administrative_area_level_1') || '';
-  const tehsil = extractComponent(components, 'administrative_area_level_3') || extractComponent(components, 'sublocality_level_1') || '';
-  const place = extractComponent(components, 'locality') || extractComponent(components, 'sublocality') || extractComponent(components, 'neighborhood') || '';
-  const country = extractComponent(components, 'country') || '';
-  return { district, tehsil, place, country };
-};
-
-// Modal component for displaying images with carousel and zoom
-const ImageModal = ({ images, placeDetails, loadingLocation, onClose, emailKey }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [zoomLevel, setZoomLevel] = useState(1); // Default zoom level (1x)
-  const imageRef = useRef(null);
-
-  // Zoom controls
-  const handleZoomIn = () => {
-    setZoomLevel((prev) => Math.min(prev + 0.2, 3)); // Max zoom: 3x
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel((prev) => Math.max(prev - 0.2, 1)); // Min zoom: 1x
-  };
-
-  const handleZoomReset = () => {
-    setZoomLevel(1); // Reset to 1x
-  };
-
-  // Handle mouse wheel for zooming
-  const handleWheel = (e) => {
-    e.preventDefault();
-    if (e.deltaY < 0) {
-      handleZoomIn();
-    } else {
-      handleZoomOut();
-    }
-  };
-
-  // Handle pinch-to-zoom
-  const handleTouchMove = (e) => {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      const distance = Math.hypot(
-        touch1.pageX - touch2.pageX,
-        touch1.pageY - touch2.pageY
-      );
-      if (!imageRef.current.lastTouchDistance) {
-        imageRef.current.lastTouchDistance = distance;
-      } else {
-        const delta = distance - imageRef.current.lastTouchDistance;
-        setZoomLevel((prev) => {
-          const newZoom = prev + delta * 0.005;
-          return Math.max(1, Math.min(newZoom, 3)); // Clamp between 1x and 3x
-        });
-        imageRef.current.lastTouchDistance = distance;
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    imageRef.current.lastTouchDistance = null;
-  };
-
-  const handlePrev = () => {
-    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-    setZoomLevel(1); // Reset zoom when changing images
-  };
-
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % images.length);
-    setZoomLevel(1); // Reset zoom when changing images
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-30">
-      <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            Images {emailKey === 'FirstEmail' ? 'in Time Frame' : 'at Location'}
-          </h2>
-          <button onClick={onClose} className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white">
-            <FaTimes className="text-xl" />
-          </button>
-        </div>
-        <div className="relative mb-4">
-          {images.length > 1 ? (
-            <>
-              <button
-                onClick={handlePrev}
-                className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-gray-800 bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 z-10"
-              >
-                <FaArrowLeft />
-              </button>
-              <div
-                className="w-full h-96 overflow-hidden flex items-center justify-center"
-                onWheel={handleWheel}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                ref={imageRef}
-              >
-                <img
-                  src={images[currentIndex].url}
-                  alt={images[currentIndex].name}
-                  className="object-contain rounded-lg"
-                  style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.2s' }}
-                />
-              </div>
-              <button
-                onClick={handleNext}
-                className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-gray-800 bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 z-10"
-              >
-                <FaArrowRight />
-              </button>
-              <div className="flex justify-center mt-2">
-                {images.map((_, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => {
-                      setCurrentIndex(idx);
-                      setZoomLevel(1); // Reset zoom when switching images
-                    }}
-                    className={`w-3 h-3 mx-1 rounded-full cursor-pointer ${idx === currentIndex ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-                  />
-                ))}
-              </div>
-            </>
-          ) : (
-            <div
-              className="w-full h-96 overflow-hidden flex items-center justify-center"
-              onWheel={handleWheel}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              ref={imageRef}
-            >
-              <img
-                src={images[0].url}
-                alt={images[0].name}
-                className="object-contain rounded-lg"
-                style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.2s' }}
-              />
-            </div>
-          )}
-          <div className="flex justify-center gap-2 mt-2">
-            <button
-              onClick={handleZoomIn}
-              className="bg-gray-800 bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75"
-              aria-label="Zoom In"
-            >
-              <FaPlus />
-            </button>
-            <button
-              onClick={handleZoomOut}
-              className="bg-gray-800 bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75"
-              aria-label="Zoom Out"
-            >
-              <FaMinus />
-            </button>
-            <button
-              onClick={handleZoomReset}
-              className="bg-gray-800 bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75"
-              aria-label="Reset Zoom"
-            >
-              <FaUndo />
-            </button>
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
-            <span className="font-semibold text-gray-900 dark:text-white">Uploaded by:</span> {images[currentIndex].uploadedBy}
-            <br />
-            <span className="font-semibold text-gray-900 dark:text-white">Taken at:</span> {new Date(images[currentIndex].timestamp).toLocaleString()}
-          </p>
-        </div>
-        <div className="text-sm space-y-1 text-gray-600 dark:text-gray-300">
-          <p className="flex gap-2 items-center">
-            <span className="font-semibold text-gray-900 dark:text-white">GPS:</span>
-            {images[0].latitude.toFixed(6)}, {images[0].longitude.toFixed(6)}
-          </p>
-          {loadingLocation ? (
-            <p className="text-sm">Loading location...</p>
-          ) : (
-            <>
-              <p><span className="font-semibold text-gray-900 dark:text-white">District Name:</span> {placeDetails.district || '—'}</p>
-              <p><span className="font-semibold text-gray-900 dark:text-white">Village Name:</span> {placeDetails.place || '—'}</p>
-              <p><span className="font-semibold text-gray-900 dark:text-white">Tehsil Name:</span> {placeDetails.tehsil || '—'}</p>
-              <p><span className="font-semibold text-gray-900 dark:text-white">Country:</span> {placeDetails.country || '—'}</p>
-            </>
-          )}
-        </div>
-        <a
-          href={`https://www.google.com/maps/dir/?api=1&destination=${images[0].latitude},${images[0].longitude}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-4 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg"
-        >
-          Get Directions <FaDirections />
-        </a>
-      </div>
-    </div>
-  );
-};
-
-// Navbar component
-const Navbar = ({ filters, selectedFilter, setSelectedFilter, showHeatmap, setShowHeatmap, uniqueCounts }) => {
-  const [notifications, setNotifications] = useState(0);
-
-  const handleNotificationClick = () => {
-    console.log('Notifications clicked. Implement notification panel or logic here.');
-  };
-
-  const legendItems = [
-    { emailKey: 'FirstEmail', icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png', label: `Peenay Ka Pani (${uniqueCounts.FirstEmail || 0} time frames)`, isIcon: true },
-    { emailKey: 'SecondEmail', icon: 'http://maps.google.com/mapfiles/kml/pal3/icon21.png', label: `Homes in Sindh (${uniqueCounts.SecondEmail || 0} unique locations)`, isIcon: true },
-    { emailKey: 'ThirdEmail', icon: 'http://maps.google.com/mapfiles/ms/icons/orange-dot.png', label: `Third Email (${uniqueCounts.ThirdEmail || 0} unique locations)`, isIcon: true },
-  ];
-
-  return (
-    <nav className="fixed top-0 left-40 right-0 z-20 bg-white dark:bg-zinc-800 shadow-md p-4 flex justify-between items-center">
-      <div className="flex items-center gap-4">
-        <h3 className="font-semibold text-black dark:text-white text-sm">Legend</h3>
-        <ul className="flex gap-3">
-          {legendItems
-            .filter(item => filters.includes(item.emailKey) || filters.includes('All'))
-            .map(item => (
-              <li key={item.emailKey} className="flex items-center gap-2">
-                {item.isIcon ? (
-                  <img
-                    src={item.icon}
-                    alt={`${item.label} icon`}
-                    className="w-4 h-4 object-contain"
-                  />
-                ) : (
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: item.color }}
-                  ></div>
-                )}
-                <span className="text-black dark:text-white text-sm">{item.label}</span>
-              </li>
-            ))}
-        </ul>
-      </div>
-      <div className="flex items-center gap-4">
-        <button
-          onClick={handleNotificationClick}
-          className="relative text-black dark:text-white hover:text-gray-600 dark:hover:text-gray-300"
-          aria-label="Notifications"
-        >
-          <FaBell className="text-lg" />
-          {notifications > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-              {notifications}
-            </span>
-          )}
-        </button>
-        <select
-          value={selectedFilter}
-          onChange={(e) => setSelectedFilter(e.target.value)}
-          className="border px-3 py-1 dark:bg-zinc-800 bg-white dark:text-white text-black text-center rounded text-sm"
-        >
-          {filters.map(f => (
-            <option key={f} value={f}>{f}</option>
-          ))}
-        </select>
-        <button
-          onClick={() => setShowHeatmap(!showHeatmap)}
-          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-        >
-          {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
-        </button>
-      </div>
-    </nav>
-  );
 };
 
 const Home = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [images, setImages] = useState([]);
-  const [selectedGeotagImages, setSelectedGeotagImages] = useState([]);
-  const [placeDetails, setPlaceDetails] = useState({ district: '', place: '', tehsil: '', country: '' });
+  const [selectedImage, setSelectedImage] = useState(null);
   const [mapReady, setMapReady] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('All');
-  const [loadingLocation, setLoadingLocation] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
-  const [uniqueCounts, setUniqueCounts] = useState({ FirstEmail: 0, SecondEmail: 0, ThirdEmail: 0 });
-  const [clusters, setClusters] = useState([]);
   const { user } = useUser();
   const { mapCenter, mapZoom } = useMap();
-  const geocodeCache = useRef(new Map());
 
-  // Function to get rounded geotag key for location-based clustering
-  const getRoundedKey = (lat, lng) => {
-    const factor = 10 ** GEOTAG_PRECISION;
-    const roundedLat = Math.round(lat * factor) / factor;
-    const roundedLng = Math.round(lng * factor) / factor;
-    return `${roundedLat},${roundedLng}`;
-  };
-
-  // Dark mode sync
   useEffect(() => {
-    const observer = new MutationObserver(() => setIsDarkMode(document.documentElement.classList.contains('dark')));
+    const observer = new MutationObserver(() =>
+      setIsDarkMode(document.documentElement.classList.contains('dark'))
+    );
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     setIsDarkMode(document.documentElement.classList.contains('dark'));
     return () => observer.disconnect();
   }, []);
 
-  // Fetch images
+  // Fetch images from backend
   const fetchPhotos = {
     FirstEmail: async () => {
       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
-      return res.data.map(img => ({ ...img, emailKey: 'FirstEmail', url: `${import.meta.env.VITE_BASE_URL}/Uploads/${img.fileId}.jpg` }));
+      return res.data.map(img => ({
+        ...img,
+        emailKey: 'FirstEmail',
+        url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`
+      }));
     },
     SecondEmail: async () => {
       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
-      return res.data.map(img => ({ ...img, emailKey: 'SecondEmail', url: `${import.meta.env.VITE_BASE_URL}/Uploads/${img.fileId}.jpg` }));
+      return res.data.map(img => ({
+        ...img,
+        emailKey: 'SecondEmail',
+        url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`
+      }));
     },
     ThirdEmail: async () => {
       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
-      return res.data.map(img => ({ ...img, emailKey: 'ThirdEmail', url: `${import.meta.env.VITE_BASE_URL}/Uploads/${img.fileId}.jpg` }));
+      return res.data.map(img => ({
+        ...img,
+        emailKey: 'ThirdEmail',
+        url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`
+      }));
     },
   };
 
@@ -373,91 +1146,6 @@ const Home = () => {
     fetchImages();
   }, [user, selectedFilter]);
 
-  // Compute clusters and unique counts when images change
-  useEffect(() => {
-    const clusterMap = {};
-    const counts = { FirstEmail: new Set(), SecondEmail: new Set(), ThirdEmail: new Set() };
-
-    const getTimeBucket = (timestamp) => {
-      const date = new Date(timestamp);
-      const minutes = date.getTime() / (1000 * 60);
-      return Math.floor(minutes / 20) * 20; // Group into 20-minute intervals
-    };
-
-    images.forEach(img => {
-      if (!img.timestamp) {
-        console.warn(`Image with fileId ${img.fileId} has no timestamp and will be skipped.`);
-        return;
-      }
-      let clusterKey;
-      if (img.emailKey === 'FirstEmail') {
-        const timeBucket = getTimeBucket(img.timestamp);
-        clusterKey = `${img.emailKey}_${timeBucket}`;
-        counts[img.emailKey].add(timeBucket);
-      } else {
-        const roundedKey = getRoundedKey(img.latitude, img.longitude);
-        clusterKey = `${img.emailKey}_${roundedKey}`;
-        counts[img.emailKey].add(roundedKey);
-      }
-      
-      if (!clusterMap[clusterKey]) {
-        clusterMap[clusterKey] = [];
-      }
-      clusterMap[clusterKey].push(img);
-    });
-
-    const clusterList = Object.values(clusterMap).map(group => {
-      const sortedImages = group.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-      return {
-        rep: sortedImages[0],
-        images: sortedImages.slice(0, 3) // Limit to 3 images per cluster
-      };
-    });
-
-    setClusters(clusterList);
-    setUniqueCounts({
-      FirstEmail: counts.FirstEmail.size,
-      SecondEmail: counts.SecondEmail.size,
-      ThirdEmail: counts.ThirdEmail.size,
-    });
-  }, [images]);
-
-  const fetchPlaceDetails = useCallback(async (latitude, longitude) => {
-    const cacheKey = `${latitude},${longitude}`;
-    if (geocodeCache.current.has(cacheKey)) return geocodeCache.current.get(cacheKey);
-    try {
-      setLoadingLocation(true);
-      const res = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', { params: { latlng: `${latitude},${longitude}`, key: import.meta.env.VITE_GEOCODING_API_KEY } });
-      if (res.data.status === 'OK' && res.data.results.length > 0) {
-        const parsed = parsePlaceDetails(res.data.results[0].address_components || []);
-        geocodeCache.current.set(cacheKey, parsed);
-        return parsed;
-      }
-      return { district: '', place: 'Unknown Location', tehsil: '', country: '' };
-    } catch {
-      return { district: '', place: 'Error fetching location', tehsil: '', country: '' };
-    } finally {
-      setLoadingLocation(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (selectedGeotagImages.length === 0) {
-      setPlaceDetails({ district: '', place: '', tehsil: '', country: '' });
-      return;
-    }
-    const doFetch = async () => {
-      const details = await fetchPlaceDetails(selectedGeotagImages[0].latitude, selectedGeotagImages[0].longitude);
-      setPlaceDetails(details);
-    };
-    doFetch();
-  }, [selectedGeotagImages, fetchPlaceDetails]);
-
-  const closeModal = () => {
-    setSelectedGeotagImages([]);
-    setPlaceDetails({ district: '', place: '', tehsil: '', country: '' });
-  };
-
   const filters = ['All'];
   if (user?.role === 'admin' || user?.permissions?.includes('FirstEmail')) filters.push('FirstEmail');
   if (user?.role === 'admin' || user?.permissions?.includes('SecondEmail')) filters.push('SecondEmail');
@@ -467,14 +1155,24 @@ const Home = () => {
 
   return (
     <div className="h-screen w-full relative">
-      <Navbar
-        filters={filters}
-        selectedFilter={selectedFilter}
-        setSelectedFilter={setSelectedFilter}
-        showHeatmap={showHeatmap}
-        setShowHeatmap={setShowHeatmap}
-        uniqueCounts={uniqueCounts}
-      />
+      {/* Controls */}
+      <div className="absolute z-10 top-2 left-1/2 transform -translate-x-1/2 flex gap-2 p-2">
+        <select
+          value={selectedFilter}
+          onChange={(e) => setSelectedFilter(e.target.value)}
+          className="border px-3 py-1 dark:bg-zinc-800 bg-white dark:text-white text-black text-center rounded text-sm"
+        >
+          {filters.map(f => <option key={f} value={f}>{f}</option>)}
+        </select>
+
+        <button
+          onClick={() => setShowHeatmap(!showHeatmap)}
+          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+        >
+          {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
+        </button>
+      </div>
+
       <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY} libraries={['visualization']}>
         <GoogleMap
           key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}`}
@@ -482,30 +1180,61 @@ const Home = () => {
           center={mapCenter}
           zoom={mapZoom}
           onLoad={() => setMapReady(true)}
-          options={{ styles: isDarkMode ? darkMapStyle : undefined, disableDefaultUI: false, restriction: { latLngBounds: pakistanBounds, strictBounds: true }, gestureHandling: 'greedy' }}
+          options={{
+            styles: isDarkMode ? darkMapStyle : undefined,
+            disableDefaultUI: false,
+            restriction: { latLngBounds: pakistanBounds, strictBounds: true },
+            gestureHandling: 'greedy'
+          }}
         >
-          {mapReady && clusters.map(({ rep, images: clusterImages }, index) => (
+          {/* Markers */}
+          {mapReady && images.map((img, index) => (
             <Marker
               key={index}
-              position={{ lat: rep.latitude, lng: rep.longitude }}
-              onClick={() => setSelectedGeotagImages(clusterImages)}
-              icon={markerIcons[rep.emailKey] || markerIcons.FirstEmail}
+              position={{ lat: img.latitude, lng: img.longitude }}
+              onClick={() => setSelectedImage(img)}
+              icon={markerIcons[img.emailKey] || markerIcons.FirstEmail}
             />
           ))}
+
+          {/* Heatmap */}
           {mapReady && showHeatmap && heatmapData.length > 0 && (
             <HeatmapLayer data={heatmapData} options={{ radius: 50 }} />
           )}
+
+          {/* InfoWindow */}
+          {selectedImage && (
+            <InfoWindow
+              position={{ lat: selectedImage.latitude, lng: selectedImage.longitude }}
+              onCloseClick={() => setSelectedImage(null)}
+            >
+              <div className="w-fit max-w-sm p-2 rounded-md bg-white shadow-lg">
+                <img src={selectedImage.url} alt={selectedImage.name} className="w-full h-40 object-scale-down rounded" />
+                <div className="mt-2 text-sm space-y-1">
+                  <p className="text-gray-400"><span className="font-semibold text-black">GPS:</span> {selectedImage.latitude}, {selectedImage.longitude}</p>
+                  <div className="text-gray-400">
+                    <p><span className="font-semibold text-black">District:</span> {selectedImage.district || '—'}</p>
+                    <p><span className="font-semibold text-black">Village:</span> {selectedImage.village || '—'}</p>
+                    <p><span className="font-semibold text-black">Tehsil:</span> {selectedImage.tehsil || '—'}</p>
+                    <p><span className="font-semibold text-black">Country:</span> {selectedImage.country || '—'}</p>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    <span className="uppercase font-semibold text-black">Uploaded by:</span> {selectedImage.uploadedBy}
+                  </p>
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${selectedImage.latitude},${selectedImage.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded"
+                  >
+                    Get Directions <FaDirections />
+                  </a>
+                </div>
+              </div>
+            </InfoWindow>
+          )}
         </GoogleMap>
       </LoadScript>
-      {selectedGeotagImages.length > 0 && (
-        <ImageModal
-          images={selectedGeotagImages}
-          placeDetails={placeDetails}
-          loadingLocation={loadingLocation}
-          onClose={closeModal}
-          emailKey={selectedGeotagImages[0].emailKey}
-        />
-      )}
     </div>
   );
 };
