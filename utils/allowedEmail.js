@@ -1,5 +1,5 @@
 export const allowedEmails = [
-    'peenaykapani@gmail.com',
-    'homesinsindh@gmail.com',
+    'mhuzaifa8519@gmail.com',
+    'mhuzaifa86797@gmail.com',
     'muhammadjig8@gmail.com'
 ];
