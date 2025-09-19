@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { TbReload } from "react-icons/tb";
 import { useUser } from '../Context/UserContext';
-import { allowedEmails } from '../../../backend/config/allowedEmail';
+import { allowedEmails } from '../../utils/allowedEmail';
 
 const ImagesByEmails = () => {
     const location = useLocation()
