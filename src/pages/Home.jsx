@@ -49,30 +49,30 @@ const Home = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Fetch images from backend
+  // ✅ Fetch images from backend (GridFS version)
   const fetchPhotos = {
     FirstEmail: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
+      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`, { withCredentials: true });
       return res.data.map(img => ({
         ...img,
         emailKey: 'FirstEmail',
-        url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`
+        url: `${import.meta.env.VITE_BASE_URL}/photos/file/${img.gridFsId}` // 👈 GridFS route
       }));
     },
     SecondEmail: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
+      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`, { withCredentials: true });
       return res.data.map(img => ({
         ...img,
         emailKey: 'SecondEmail',
-        url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`
+        url: `${import.meta.env.VITE_BASE_URL}/photos/file/${img.gridFsId}`
       }));
     },
     ThirdEmail: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
+      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`, { withCredentials: true });
       return res.data.map(img => ({
         ...img,
         emailKey: 'ThirdEmail',
-        url: `${import.meta.env.VITE_BASE_URL}/uploads/${img.fileId}.jpg`
+        url: `${import.meta.env.VITE_BASE_URL}/photos/file/${img.gridFsId}`
       }));
     },
   };
@@ -131,7 +131,7 @@ const Home = () => {
 
       <LoadScript
         googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-        libraries={libraries} // 👈 fixed: static array
+        libraries={libraries}
       >
         <GoogleMap
           key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}`}
