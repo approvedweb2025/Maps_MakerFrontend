@@ -79,24 +79,28 @@ const Home = () => {
 
   useEffect(() => {
     const fetchImages = async () => {
-      let all = [];
-      const permissions = [];
+      try {
+        let all = [];
+        const permissions = [];
 
-      if (user?.role === 'admin') {
-        permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
-      } else {
-        if (user?.permissions?.includes('FirstEmail')) permissions.push('FirstEmail');
-        if (user?.permissions?.includes('SecondEmail')) permissions.push('SecondEmail');
-        if (user?.permissions?.includes('ThirdEmail')) permissions.push('ThirdEmail');
-      }
-
-      for (const emailKey of permissions) {
-        if (selectedFilter === 'All' || selectedFilter === emailKey) {
-          const data = await fetchPhotos[emailKey]();
-          all.push(...data);
+        if (user?.role === 'admin') {
+          permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
+        } else {
+          if (user?.permissions?.includes('FirstEmail')) permissions.push('FirstEmail');
+          if (user?.permissions?.includes('SecondEmail')) permissions.push('SecondEmail');
+          if (user?.permissions?.includes('ThirdEmail')) permissions.push('ThirdEmail');
         }
+
+        for (const emailKey of permissions) {
+          if (selectedFilter === 'All' || selectedFilter === emailKey) {
+            const data = await fetchPhotos[emailKey]();
+            all.push(...data);
+          }
+        }
+        setImages(all);
+      } catch (err) {
+        console.error("❌ Failed to fetch images:", err);
       }
-      setImages(all);
     };
 
     fetchImages();
