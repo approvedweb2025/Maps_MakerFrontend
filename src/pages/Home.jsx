@@ -53,27 +53,45 @@ const Home = () => {
   const fetchPhotos = {
     FirstEmail: async () => {
       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`, { withCredentials: true });
-      return res.data.map(img => ({
-        ...img,
-        emailKey: 'FirstEmail',
-        url: `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-      }));
+      return res.data.map(img => {
+        const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
+        const primaryUrl = isObjectId
+          ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
+          : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`;
+        return {
+          ...img,
+          emailKey: 'FirstEmail',
+          url: primaryUrl,
+        };
+      });
     },
     SecondEmail: async () => {
       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`, { withCredentials: true });
-      return res.data.map(img => ({
-        ...img,
-        emailKey: 'SecondEmail',
-        url: `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-      }));
+      return res.data.map(img => {
+        const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
+        const primaryUrl = isObjectId
+          ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
+          : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`;
+        return {
+          ...img,
+          emailKey: 'SecondEmail',
+          url: primaryUrl,
+        };
+      });
     },
     ThirdEmail: async () => {
       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`, { withCredentials: true });
-      return res.data.map(img => ({
-        ...img,
-        emailKey: 'ThirdEmail',
-        url: `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-      }));
+      return res.data.map(img => {
+        const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
+        const primaryUrl = isObjectId
+          ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
+          : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`;
+        return {
+          ...img,
+          emailKey: 'ThirdEmail',
+          url: primaryUrl,
+        };
+      });
     },
   };
 
