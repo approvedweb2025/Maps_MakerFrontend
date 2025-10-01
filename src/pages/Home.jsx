@@ -172,7 +172,17 @@ const Home = () => {
               onCloseClick={() => setSelectedImage(null)}
             >
               <div className="w-fit max-w-sm p-2 rounded-md bg-white shadow-lg">
-                <img src={selectedImage.url} alt={selectedImage.name} className="w-full h-40 object-scale-down rounded" />
+                <img
+                  src={selectedImage.url}
+                  alt={selectedImage.name}
+                  className="w-full h-40 object-scale-down rounded"
+                  onError={(e) => {
+                    const fallbackId = selectedImage.driveFileId || selectedImage.fileId;
+                    if (fallbackId) {
+                      e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${fallbackId}`;
+                    }
+                  }}
+                />
                 <div className="mt-2 text-sm space-y-1">
                   <p className="text-gray-400">
                     <span className="font-semibold text-black">GPS:</span> {selectedImage.latitude}, {selectedImage.longitude}
