@@ -1,6 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { IoClose } from "react-icons/io5";
+import { allowedEmails } from "../../utils/allowedEmail";
 
 const SecondEmail = () => {
   const [photos, setPhotos] = useState([]);
@@ -16,26 +17,27 @@ const SecondEmail = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoom, setZoom] = useState(1);
 
-  const normalizePhoto = (photo) => {
-    const isObjectId = /^[a-f0-9]{24}$/i.test(String(photo.fileId || ''));
-    const displayUrl = photo.cloudinaryUrl
-      ? photo.cloudinaryUrl
-      : isObjectId
-        ? `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId}`
-        : `https://drive.google.com/uc?export=view&id=${photo.driveFileId || photo.fileId}`;
-    return { ...photo, displayUrl };
-  };
-
   const fetchPhotos = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
-      const rawPhotos = Array.isArray(res.data) ? res.data : (res.data.photos || []);
+      let res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
+      let rawPhotos = Array.isArray(res.data) ? res.data : (res.data.photos || []);
+
+      // Fallback: if endpoint returns empty, fetch all and filter by second email
+      if (!rawPhotos || rawPhotos.length === 0) {
+        const allRes = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+        const allPhotos = Array.isArray(allRes.data?.photos) ? allRes.data.photos : [];
+        const secondEmail = allowedEmails?.[1];
+        rawPhotos = allPhotos.filter(p => p.uploadedBy === secondEmail);
+      }
 
       const enrichedPhotos = rawPhotos.map((photo) => ({
-        ...normalizePhoto(photo),
+        ...photo,
         year: new Date(photo.timestamp).getFullYear(),
         district: photo.district || "Unknown",
+        fullUrl: photo.cloudinaryUrl
+          ? photo.cloudinaryUrl
+          : `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId || photo.driveFileId}`,
       }));
 
       setPhotos(enrichedPhotos);
@@ -84,7 +86,7 @@ const SecondEmail = () => {
         {images.slice(0, 6).map((photo) => (
           <img
             key={photo.fileId}
-            src={photo.displayUrl}
+            src={photo.fullUrl}
             alt={photo.name}
             className="rounded w-full h-28 object-cover cursor-pointer"
             onError={(e) => {
@@ -92,7 +94,7 @@ const SecondEmail = () => {
               if (id) e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${id}`;
             }}
             onClick={() => {
-              setPreviewImage(photo.displayUrl);
+              setPreviewImage(photo.fullUrl);
               setIsFullscreen(false);
               setZoom(1);
             }}
@@ -166,7 +168,7 @@ const SecondEmail = () => {
               {modalPhotos.map((photo) => (
                 <img
                   key={photo.fileId}
-                  src={photo.displayUrl}
+                  src={photo.fullUrl}
                   alt={photo.name}
                   className="w-full h-32 object-cover rounded cursor-pointer"
                   onError={(e) => {
@@ -174,7 +176,7 @@ const SecondEmail = () => {
                     if (id) e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${id}`;
                   }}
                   onClick={() => {
-                    setPreviewImage(photo.displayUrl);
+                    setPreviewImage(photo.fullUrl);
                     setIsFullscreen(false);
                     setZoom(1);
                   }}
