@@ -81,6 +81,10 @@ const SecondEmail = () => {
             src={photo.fullUrl}
             alt={photo.name}
             className="rounded w-full h-28 object-cover cursor-pointer"
+            onError={(e) => {
+              const id = photo.driveFileId || photo.fileId;
+              if (id) e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${id}`;
+            }}
             onClick={() => {
               setPreviewImage(photo.fullUrl);
               setIsFullscreen(false);
@@ -159,6 +163,10 @@ const SecondEmail = () => {
                   src={photo.fullUrl}
                   alt={photo.name}
                   className="w-full h-32 object-cover rounded cursor-pointer"
+                  onError={(e) => {
+                    const id = photo.driveFileId || photo.fileId;
+                    if (id) e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${id}`;
+                  }}
                   onClick={() => {
                     setPreviewImage(photo.fullUrl);
                     setIsFullscreen(false);
