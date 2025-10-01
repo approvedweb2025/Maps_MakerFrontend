@@ -35,7 +35,7 @@ const Home = () => {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [mapReady, setMapReady] = useState(false);
-  const [selectedEmails, setSelectedEmails] = useState({ FirstEmail: true, SecondEmail: true, ThirdEmail: true });
+  const [selectedEmails, setSelectedEmails] = useState({ FirstEmail: false, SecondEmail: false, ThirdEmail: false });
   const [showHeatmap, setShowHeatmap] = useState(false);
   const { user } = useUser();
   const { mapCenter, mapZoom } = useMap();
@@ -102,12 +102,10 @@ const buildPhoto = (img, emailKey) => {
         );
       }
 
-      // If none selected, default to All
+      // If none selected, show nothing
       if (promises.length === 0) {
-        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-        const allPhotos = Array.isArray(res.data?.photos) ? res.data.photos : [];
-        photos = allPhotos.filter(p => p.latitude != null && p.longitude != null)
-          .map(p => buildPhoto(p, 'FirstEmail'));
+        setImages([]);
+        return;
       } else {
         const parts = await Promise.all(promises);
         photos = parts.flat();
@@ -124,6 +122,9 @@ const buildPhoto = (img, emailKey) => {
 
   const toggleEmail = (key) => {
     setSelectedEmails(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+  const selectAll = () => {
+    setSelectedEmails({ FirstEmail: true, SecondEmail: true, ThirdEmail: true });
   };
 
   const heatmapData = (typeof window !== 'undefined' && window.google && mapReady)
@@ -143,6 +144,7 @@ const buildPhoto = (img, emailKey) => {
         <label className="flex items-center gap-1 text-xs sm:text-sm">
           <input type="checkbox" checked={selectedEmails.ThirdEmail} onChange={() => toggleEmail('ThirdEmail')} /> Third
         </label>
+        <button onClick={selectAll} className="px-2 py-1 bg-gray-200 dark:bg-zinc-700 rounded text-xs sm:text-sm">All</button>
         <button
           onClick={() => setShowHeatmap(!showHeatmap)}
           className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
