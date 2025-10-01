@@ -1,6 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { IoClose } from "react-icons/io5";
+import { normalizePhoto } from "../utils/photoUtils";
 
 const SecondEmail = () => {
   const [photos, setPhotos] = useState([]);
@@ -19,18 +20,13 @@ const SecondEmail = () => {
   const fetchPhotos = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(
-        `${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`
-      );
+      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
       const rawPhotos = Array.isArray(res.data) ? res.data : (res.data.photos || []);
 
       const enrichedPhotos = rawPhotos.map((photo) => ({
-        ...photo,
+        ...normalizePhoto(photo),
         year: new Date(photo.timestamp).getFullYear(),
         district: photo.district || "Unknown",
-        fullUrl: photo.cloudinaryUrl
-          ? photo.cloudinaryUrl
-          : `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId || photo.driveFileId}`,
       }));
 
       setPhotos(enrichedPhotos);
@@ -79,7 +75,7 @@ const SecondEmail = () => {
         {images.slice(0, 6).map((photo) => (
           <img
             key={photo.fileId}
-            src={photo.fullUrl}
+            src={photo.displayUrl}
             alt={photo.name}
             className="rounded w-full h-28 object-cover cursor-pointer"
             onError={(e) => {
@@ -87,7 +83,7 @@ const SecondEmail = () => {
               if (id) e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${id}`;
             }}
             onClick={() => {
-              setPreviewImage(photo.fullUrl);
+              setPreviewImage(photo.displayUrl);
               setIsFullscreen(false);
               setZoom(1);
             }}
@@ -161,7 +157,7 @@ const SecondEmail = () => {
               {modalPhotos.map((photo) => (
                 <img
                   key={photo.fileId}
-                  src={photo.fullUrl}
+                  src={photo.displayUrl}
                   alt={photo.name}
                   className="w-full h-32 object-cover rounded cursor-pointer"
                   onError={(e) => {
@@ -169,7 +165,7 @@ const SecondEmail = () => {
                     if (id) e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${id}`;
                   }}
                   onClick={() => {
-                    setPreviewImage(photo.fullUrl);
+                    setPreviewImage(photo.displayUrl);
                     setIsFullscreen(false);
                     setZoom(1);
                   }}
