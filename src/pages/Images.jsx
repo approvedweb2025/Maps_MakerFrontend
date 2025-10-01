@@ -16,11 +16,11 @@ const Images = () => {
     try {
       const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
       if (response.status === 200) {
-        // Normalize URLs: prefer googleDriveUrl, else stream/file by fileId
+        // Normalize URLs: prefer cloudinaryUrl, then backend file, then drive
         const normalized = (response.data.photos || []).map((p) => ({
           ...p,
-          displayUrl: p.googleDriveUrl
-            ? p.googleDriveUrl
+          displayUrl: p.cloudinaryUrl
+            ? p.cloudinaryUrl
             : `${import.meta.env.VITE_BASE_URL}/photos/file/${p.fileId}`,
         }));
         setPhotos(normalized);
