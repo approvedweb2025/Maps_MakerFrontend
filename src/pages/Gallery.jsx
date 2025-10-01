@@ -50,6 +50,10 @@ const Gallery = () => {
                   src={photo.displayUrl}
                   alt={photo.name}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const id = photo.driveFileId || photo.fileId;
+                    if (id) e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${id}`;
+                  }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-200">
