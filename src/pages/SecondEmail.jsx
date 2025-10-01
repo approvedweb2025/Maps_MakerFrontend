@@ -22,8 +22,7 @@ const SecondEmail = () => {
       setLoading(true);
       const allRes = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
       const allPhotos = Array.isArray(allRes.data?.photos) ? allRes.data.photos : [];
-      const secondEmail = allowedEmails?.[1];
-      const rawPhotos = allPhotos.filter(p => p.uploadedBy === secondEmail);
+      const rawPhotos = allPhotos.filter(p => p.latitude != null && p.longitude != null);
 
       const enrichedPhotos = rawPhotos.map((photo) => ({
         ...photo,
