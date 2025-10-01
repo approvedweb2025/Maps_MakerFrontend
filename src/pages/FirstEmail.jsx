@@ -248,6 +248,7 @@ const FirstEmail = () => {
   const [zoom, setZoom] = useState(1); // ✅ New zoom state
 
   const geocodeCache = useRef(new Map());
+  const [selectedEmails, setSelectedEmails] = useState({ FirstEmail: false, SecondEmail: false, ThirdEmail: false });
 
   const getDistrict = useCallback(async (lat, lng) => {
     const key = `${lat},${lng}`;
@@ -282,44 +283,65 @@ const FirstEmail = () => {
     }
   }, []);
 
+  const buildUrl = (p) => {
+    const isObjectId = /^[a-f0-9]{24}$/i.test(String(p.fileId || ""));
+    return p.cloudinaryUrl
+      ? p.cloudinaryUrl
+      : (isObjectId
+        ? `${import.meta.env.VITE_BASE_URL}/photos/file/${p.fileId}`
+        : `https://drive.google.com/uc?export=view&id=${p.driveFileId || p.fileId}`);
+  };
+
   const fetchPhotos = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(
-        `${import.meta.env.VITE_BASE_URL}/photos/getImages/peenaykapani@gmail.com`
-      );
-      const raw = res.data.photos || [];
+      const mapList = (list) => (list || [])
+        .filter(p => p.latitude != null && p.longitude != null)
+        .map(p => ({
+          ...p,
+          year: p.timestamp ? new Date(p.timestamp).getFullYear() : new Date().getFullYear(),
+          city: p.district || "Unknown",
+          fullUrl: buildUrl(p),
+        }));
 
-      const uniqueCoords = {};
-      for (const photo of raw) {
-        if (photo.latitude != null && photo.longitude != null) {
-          const key = `${photo.latitude},${photo.longitude}`;
-          if (!uniqueCoords[key]) {
-            uniqueCoords[key] = getDistrict(photo.latitude, photo.longitude);
-          }
-        }
+      const promises = [];
+      if (selectedEmails.FirstEmail) {
+        promises.push(
+          axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`).then(res => mapList(res.data))
+            .catch(async () => {
+              const allRes = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+              return mapList(allRes.data?.photos || []);
+            })
+        );
+      }
+      if (selectedEmails.SecondEmail) {
+        promises.push(
+          axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`).then(res => mapList(res.data))
+            .catch(async () => {
+              const allRes = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+              return mapList(allRes.data?.photos || []);
+            })
+        );
+      }
+      if (selectedEmails.ThirdEmail) {
+        promises.push(
+          axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`).then(res => mapList(res.data))
+            .catch(async () => {
+              const allRes = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+              return mapList(allRes.data?.photos || []);
+            })
+        );
       }
 
-      const coordToDistrict = {};
-      await Promise.all(
-        Object.entries(uniqueCoords).map(async ([key, promise]) => {
-          coordToDistrict[key] = await promise;
-        })
-      );
+      if (promises.length === 0) {
+        setPhotos([]);
+        setPhotosByYear({});
+        setPhotosByCity({});
+        return;
+      }
 
-      const withMetadata = raw.map((p) => {
-        let city = "Unknown";
-        if (p.latitude != null && p.longitude != null) {
-          const key = `${p.latitude},${p.longitude}`;
-          city = coordToDistrict[key] || "Unknown";
-        }
-
-        return {
-          ...p,
-          year: p.timestamp ? new Date(p.timestamp).getFullYear() : "Unknown",
-          city,
-        };
-      });
+      const parts = await Promise.all(promises);
+      const withMetadata = parts.flat();
 
       setPhotos(withMetadata);
 
@@ -347,12 +369,19 @@ const FirstEmail = () => {
 
   useEffect(() => {
     fetchPhotos();
-  }, [getDistrict]);
+  }, [selectedEmails]);
 
   const openModal = (title, images) => {
     setModalTitle(title);
     setModalPhotos(images);
     setShowModal(true);
+  };
+
+  const toggleEmail = (key) => {
+    setSelectedEmails(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+  const selectAll = () => {
+    setSelectedEmails({ FirstEmail: true, SecondEmail: true, ThirdEmail: true });
   };
 
   const ImageGrid = ({ title, images }) => (
@@ -397,6 +426,18 @@ const FirstEmail = () => {
 
   return (
     <div className="px-4 py-8 max-w-7xl mx-auto">
+      <div className="flex gap-3 items-center justify-center mb-4">
+        <label className="flex items-center gap-1 text-xs sm:text-sm">
+          <input type="checkbox" checked={selectedEmails.FirstEmail} onChange={() => toggleEmail('FirstEmail')} /> First
+        </label>
+        <label className="flex items-center gap-1 text-xs sm:text-sm">
+          <input type="checkbox" checked={selectedEmails.SecondEmail} onChange={() => toggleEmail('SecondEmail')} /> Second
+        </label>
+        <label className="flex items-center gap-1 text-xs sm:text-sm">
+          <input type="checkbox" checked={selectedEmails.ThirdEmail} onChange={() => toggleEmail('ThirdEmail')} /> Third
+        </label>
+        <button onClick={selectAll} className="px-2 py-1 bg-gray-200 dark:bg-zinc-700 rounded text-xs sm:text-sm">All</button>
+      </div>
       <h1 className="text-3xl font-bold text-center mb-6 text-gray-800 dark:text-white">
         Uploaded Photos
       </h1>
