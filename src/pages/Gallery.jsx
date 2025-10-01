@@ -14,7 +14,9 @@ const Gallery = () => {
       if (response.status === 200) {
         const normalized = (response.data.photos || []).map((p) => ({
           ...p,
-          displayUrl: p.googleDriveUrl ? p.googleDriveUrl : `${import.meta.env.VITE_BASE_URL}/photos/file/${p.fileId}`,
+          displayUrl: p.cloudinaryUrl
+            ? p.cloudinaryUrl
+            : `${import.meta.env.VITE_BASE_URL}/photos/file/${p.fileId}`,
         }));
         setPhotos(normalized);
       }
