@@ -51,124 +51,41 @@ const Home = () => {
   }, []);
 
   // ✅ Fetch images from backend (GridFS version)
-  const fetchPhotos = {
-    FirstEmail: async () => {
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
-        return res.data.map(img => {
-          const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
-          const primaryUrl = img.cloudinaryUrl
-            ? img.cloudinaryUrl
-            : (isObjectId
-              ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-              : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
-          return {
-            ...img,
-            emailKey: 'FirstEmail',
-            url: primaryUrl,
-          };
-        });
-      } catch (_) {
-        // Fallback: fetch all and filter by first email
-        const all = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-        const email = allowedEmails?.[0];
-        return (all.data.photos || []).filter(p => p.uploadedBy === email).map(img => {
-          const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
-          const primaryUrl = img.cloudinaryUrl
-            ? img.cloudinaryUrl
-            : (isObjectId
-              ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-              : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
-          return { ...img, emailKey: 'FirstEmail', url: primaryUrl };
-        });
-      }
-    },
-    SecondEmail: async () => {
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
-        return res.data.map(img => {
-          const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
-          const primaryUrl = img.cloudinaryUrl
-            ? img.cloudinaryUrl
-            : (isObjectId
-              ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-              : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
-          return {
-            ...img,
-            emailKey: 'SecondEmail',
-            url: primaryUrl,
-          };
-        });
-      } catch (_) {
-        const all = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-        const email = allowedEmails?.[1];
-        return (all.data.photos || []).filter(p => p.uploadedBy === email).map(img => {
-          const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
-          const primaryUrl = img.cloudinaryUrl
-            ? img.cloudinaryUrl
-            : (isObjectId
-              ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-              : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
-          return { ...img, emailKey: 'SecondEmail', url: primaryUrl };
-        });
-      }
-    },
-    ThirdEmail: async () => {
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
-        return res.data.map(img => {
-          const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
-          const primaryUrl = img.cloudinaryUrl
-            ? img.cloudinaryUrl
-            : (isObjectId
-              ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-              : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
-          return {
-            ...img,
-            emailKey: 'ThirdEmail',
-            url: primaryUrl,
-          };
-        });
-      } catch (_) {
-        const all = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-        const email = allowedEmails?.[2];
-        return (all.data.photos || []).filter(p => p.uploadedBy === email).map(img => {
-          const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
-          const primaryUrl = img.cloudinaryUrl
-            ? img.cloudinaryUrl
-            : (isObjectId
-              ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-              : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
-          return { ...img, emailKey: 'ThirdEmail', url: primaryUrl };
-        });
-      }
-    },
+  // Simplified: fetch all photos once and filter on client
+  const buildPhoto = (img, emailKey) => {
+    const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
+    const primaryUrl = img.cloudinaryUrl
+      ? img.cloudinaryUrl
+      : (isObjectId
+        ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
+        : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
+    return { ...img, emailKey, url: primaryUrl };
   };
 
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        let all = [];
-        const permissions = [];
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+        const allPhotos = Array.isArray(res.data?.photos) ? res.data.photos : [];
 
-        if (user?.role === 'admin') {
-          permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
-        } else if (user && Array.isArray(user?.permissions)) {
-          if (user.permissions.includes('FirstEmail')) permissions.push('FirstEmail');
-          if (user.permissions.includes('SecondEmail')) permissions.push('SecondEmail');
-          if (user.permissions.includes('ThirdEmail')) permissions.push('ThirdEmail');
-        } else {
-          // No user or no explicit permissions → show all by default
-          permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
+        const mapEmailKey = (uploader) => {
+          if (uploader === allowedEmails?.[0]) return 'FirstEmail';
+          if (uploader === allowedEmails?.[1]) return 'SecondEmail';
+          if (uploader === allowedEmails?.[2]) return 'ThirdEmail';
+          return 'FirstEmail';
+        };
+
+        let filtered = allPhotos.filter(p => p.latitude != null && p.longitude != null);
+
+        if (selectedFilter !== 'All') {
+          const targetEmail = selectedFilter === 'FirstEmail' ? allowedEmails?.[0]
+            : selectedFilter === 'SecondEmail' ? allowedEmails?.[1]
+            : allowedEmails?.[2];
+          filtered = filtered.filter(p => p.uploadedBy === targetEmail);
         }
 
-        for (const emailKey of permissions) {
-          if (selectedFilter === 'All' || selectedFilter === emailKey) {
-            const data = await fetchPhotos[emailKey]();
-            all.push(...data);
-          }
-        }
-        setImages(all);
+        const built = filtered.map(p => buildPhoto(p, mapEmailKey(p.uploadedBy)));
+        setImages(built);
       } catch (err) {
         console.error("❌ Failed to fetch images:", err);
       }
