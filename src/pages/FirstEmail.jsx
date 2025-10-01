@@ -370,7 +370,9 @@ const FirstEmail = () => {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {images.slice(0, 6).map((photo) => {
-          const url = `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId}`;
+          const url = photo.cloudinaryUrl
+            ? photo.cloudinaryUrl
+            : `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId}`;
           return (
             <img
               key={photo.fileId}
@@ -455,7 +457,9 @@ const FirstEmail = () => {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {modalPhotos.map((photo) => {
-                const url = `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId}`;
+                const url = photo.cloudinaryUrl
+                  ? photo.cloudinaryUrl
+                  : `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId}`;
                 return (
                   <img
                     key={photo.fileId}
