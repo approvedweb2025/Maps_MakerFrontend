@@ -4,11 +4,10 @@ import axios from 'axios';
 import { useUser } from '../Context/UserContext';
 import { FaDirections } from 'react-icons/fa';
 import { useMap } from '../Context/MapContext';
+import { normalizePhoto } from '../utils/photoUtils';
 
 const containerStyle = { width: '100%', height: '100vh' };
 const pakistanBounds = { north: 37.0, south: 23.5, west: 60.9, east: 77.0 };
-
-// 👇 Libraries constant to avoid reloading warning
 const libraries = ['visualization'];
 
 const darkMapStyle = [
@@ -49,56 +48,22 @@ const Home = () => {
     return () => observer.disconnect();
   }, []);
 
-  // ✅ Fetch images from backend (GridFS version)
+  // Fetch photos for each email key
   const fetchPhotos = {
     FirstEmail: async () => {
       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`, { withCredentials: true });
-      return res.data.map(img => {
-        // Prefer Cloudinary when available
-        const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
-        const primaryUrl = img.cloudinaryUrl
-          ? img.cloudinaryUrl
-          : (isObjectId
-            ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-            : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
-        return {
-          ...img,
-          emailKey: 'FirstEmail',
-          url: primaryUrl,
-        };
-      });
+      const raw = Array.isArray(res.data) ? res.data : (res.data.photos || []);
+      return raw.map(img => ({ ...normalizePhoto(img), emailKey: 'FirstEmail' }));
     },
     SecondEmail: async () => {
       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`, { withCredentials: true });
-      return res.data.map(img => {
-        const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
-        const primaryUrl = img.cloudinaryUrl
-          ? img.cloudinaryUrl
-          : (isObjectId
-            ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-            : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
-        return {
-          ...img,
-          emailKey: 'SecondEmail',
-          url: primaryUrl,
-        };
-      });
+      const raw = Array.isArray(res.data) ? res.data : (res.data.photos || []);
+      return raw.map(img => ({ ...normalizePhoto(img), emailKey: 'SecondEmail' }));
     },
     ThirdEmail: async () => {
       const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`, { withCredentials: true });
-      return res.data.map(img => {
-        const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
-        const primaryUrl = img.cloudinaryUrl
-          ? img.cloudinaryUrl
-          : (isObjectId
-            ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-            : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
-        return {
-          ...img,
-          emailKey: 'ThirdEmail',
-          url: primaryUrl,
-        };
-      });
+      const raw = Array.isArray(res.data) ? res.data : (res.data.photos || []);
+      return raw.map(img => ({ ...normalizePhoto(img), emailKey: 'ThirdEmail' }));
     },
   };
 
@@ -158,10 +123,7 @@ const Home = () => {
         </button>
       </div>
 
-      <LoadScript
-        googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-        libraries={libraries}
-      >
+      <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY} libraries={libraries}>
         <GoogleMap
           key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}`}
           mapContainerStyle={containerStyle}
@@ -198,7 +160,7 @@ const Home = () => {
             >
               <div className="w-fit max-w-sm p-2 rounded-md bg-white shadow-lg">
                 <img
-                  src={selectedImage.url}
+                  src={selectedImage.displayUrl}
                   alt={selectedImage.name}
                   className="w-full h-40 object-scale-down rounded"
                   onError={(e) => {
