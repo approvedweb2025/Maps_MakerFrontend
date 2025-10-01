@@ -20,7 +20,7 @@ const SecondEmail = () => {
     try {
       setLoading(true);
       const res = await axios.get(
-        `${import.meta.env.VITE_BASE_URL}/photos/getImages/mhuzaifa86797@gmail.com`
+        `${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`
       );
       const rawPhotos = res.data.photos || [];
 
