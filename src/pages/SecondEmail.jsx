@@ -28,8 +28,9 @@ const SecondEmail = () => {
         ...photo,
         year: new Date(photo.timestamp).getFullYear(),
         district: photo.district || "Unknown",
-        // Always use backend image endpoint; fallback to driveFileId if needed
-        fullUrl: `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId || photo.driveFileId}`,
+        fullUrl: photo.cloudinaryUrl
+          ? photo.cloudinaryUrl
+          : `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId || photo.driveFileId}`,
       }));
 
       setPhotos(enrichedPhotos);
