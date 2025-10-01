@@ -75,15 +75,7 @@ const Home = () => {
           return 'FirstEmail';
         };
 
-        let filtered = allPhotos.filter(p => p.latitude != null && p.longitude != null);
-
-        if (selectedFilter !== 'All') {
-          const targetEmail = selectedFilter === 'FirstEmail' ? allowedEmails?.[0]
-            : selectedFilter === 'SecondEmail' ? allowedEmails?.[1]
-            : allowedEmails?.[2];
-          filtered = filtered.filter(p => p.uploadedBy === targetEmail);
-        }
-
+        const filtered = allPhotos.filter(p => p.latitude != null && p.longitude != null);
         const built = filtered.map(p => buildPhoto(p, mapEmailKey(p.uploadedBy)));
         setImages(built);
       } catch (err) {
@@ -95,9 +87,6 @@ const Home = () => {
   }, [user, selectedFilter]);
 
   const filters = ['All'];
-  if (user?.role === 'admin' || user?.permissions?.includes('FirstEmail')) filters.push('FirstEmail');
-  if (user?.role === 'admin' || user?.permissions?.includes('SecondEmail')) filters.push('SecondEmail');
-  if (user?.role === 'admin' || user?.permissions?.includes('ThirdEmail')) filters.push('ThirdEmail');
 
   const heatmapData = (typeof window !== 'undefined' && window.google && mapReady)
     ? images.map(img => new window.google.maps.LatLng(img.latitude, img.longitude))
