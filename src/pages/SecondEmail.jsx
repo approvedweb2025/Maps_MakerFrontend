@@ -1,7 +1,6 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { IoClose } from "react-icons/io5";
-import { normalizePhoto } from "../utils/photoUtils";
 
 const SecondEmail = () => {
   const [photos, setPhotos] = useState([]);
@@ -16,6 +15,16 @@ const SecondEmail = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoom, setZoom] = useState(1);
+
+  const normalizePhoto = (photo) => {
+    const isObjectId = /^[a-f0-9]{24}$/i.test(String(photo.fileId || ''));
+    const displayUrl = photo.cloudinaryUrl
+      ? photo.cloudinaryUrl
+      : isObjectId
+        ? `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId}`
+        : `https://drive.google.com/uc?export=view&id=${photo.driveFileId || photo.fileId}`;
+    return { ...photo, displayUrl };
+  };
 
   const fetchPhotos = async () => {
     try {
