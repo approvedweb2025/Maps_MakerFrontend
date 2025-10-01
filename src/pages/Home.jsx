@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useUser } from '../Context/UserContext';
 import { FaDirections } from 'react-icons/fa';
 import { useMap } from '../Context/MapContext';
+import { allowedEmails } from "../../utils/allowedEmail";
 
 const containerStyle = { width: '100%', height: '100vh' };
 const pakistanBounds = { north: 37.0, south: 23.5, west: 60.9, east: 77.0 };
@@ -52,53 +53,95 @@ const Home = () => {
   // ✅ Fetch images from backend (GridFS version)
   const fetchPhotos = {
     FirstEmail: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`, { withCredentials: true });
-      return res.data.map(img => {
-        // Prefer Cloudinary when available
-        const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
-        const primaryUrl = img.cloudinaryUrl
-          ? img.cloudinaryUrl
-          : (isObjectId
-            ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-            : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
-        return {
-          ...img,
-          emailKey: 'FirstEmail',
-          url: primaryUrl,
-        };
-      });
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
+        return res.data.map(img => {
+          const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
+          const primaryUrl = img.cloudinaryUrl
+            ? img.cloudinaryUrl
+            : (isObjectId
+              ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
+              : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
+          return {
+            ...img,
+            emailKey: 'FirstEmail',
+            url: primaryUrl,
+          };
+        });
+      } catch (_) {
+        // Fallback: fetch all and filter by first email
+        const all = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+        const email = allowedEmails?.[0];
+        return (all.data.photos || []).filter(p => p.uploadedBy === email).map(img => {
+          const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
+          const primaryUrl = img.cloudinaryUrl
+            ? img.cloudinaryUrl
+            : (isObjectId
+              ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
+              : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
+          return { ...img, emailKey: 'FirstEmail', url: primaryUrl };
+        });
+      }
     },
     SecondEmail: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`, { withCredentials: true });
-      return res.data.map(img => {
-        const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
-        const primaryUrl = img.cloudinaryUrl
-          ? img.cloudinaryUrl
-          : (isObjectId
-            ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-            : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
-        return {
-          ...img,
-          emailKey: 'SecondEmail',
-          url: primaryUrl,
-        };
-      });
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
+        return res.data.map(img => {
+          const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
+          const primaryUrl = img.cloudinaryUrl
+            ? img.cloudinaryUrl
+            : (isObjectId
+              ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
+              : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
+          return {
+            ...img,
+            emailKey: 'SecondEmail',
+            url: primaryUrl,
+          };
+        });
+      } catch (_) {
+        const all = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+        const email = allowedEmails?.[1];
+        return (all.data.photos || []).filter(p => p.uploadedBy === email).map(img => {
+          const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
+          const primaryUrl = img.cloudinaryUrl
+            ? img.cloudinaryUrl
+            : (isObjectId
+              ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
+              : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
+          return { ...img, emailKey: 'SecondEmail', url: primaryUrl };
+        });
+      }
     },
     ThirdEmail: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`, { withCredentials: true });
-      return res.data.map(img => {
-        const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
-        const primaryUrl = img.cloudinaryUrl
-          ? img.cloudinaryUrl
-          : (isObjectId
-            ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
-            : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
-        return {
-          ...img,
-          emailKey: 'ThirdEmail',
-          url: primaryUrl,
-        };
-      });
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
+        return res.data.map(img => {
+          const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
+          const primaryUrl = img.cloudinaryUrl
+            ? img.cloudinaryUrl
+            : (isObjectId
+              ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
+              : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
+          return {
+            ...img,
+            emailKey: 'ThirdEmail',
+            url: primaryUrl,
+          };
+        });
+      } catch (_) {
+        const all = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+        const email = allowedEmails?.[2];
+        return (all.data.photos || []).filter(p => p.uploadedBy === email).map(img => {
+          const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
+          const primaryUrl = img.cloudinaryUrl
+            ? img.cloudinaryUrl
+            : (isObjectId
+              ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
+              : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
+          return { ...img, emailKey: 'ThirdEmail', url: primaryUrl };
+        });
+      }
     },
   };
 
