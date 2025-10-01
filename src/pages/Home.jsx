@@ -50,9 +50,8 @@ const Home = () => {
     return () => observer.disconnect();
   }, []);
 
-  // ✅ Fetch images from backend (GridFS version)
-  // Simplified: fetch all photos once and filter on client
-  const buildPhoto = (img, emailKey) => {
+// ✅ Build a reliable display URL: Cloudinary → GridFS stream → Google Drive
+const buildPhoto = (img, emailKey) => {
     const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
     const primaryUrl = img.cloudinaryUrl
       ? img.cloudinaryUrl
@@ -65,19 +64,36 @@ const Home = () => {
   useEffect(() => {
     const fetchImages = async () => {
       try {
+      let photos = [];
+
+      const mapList = (list, emailKey) =>
+        (list || []).filter(p => p.latitude != null && p.longitude != null)
+          .map(p => buildPhoto(p, emailKey));
+
+      if (selectedFilter === 'FirstEmail') {
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
+        photos = mapList(res.data, 'FirstEmail');
+      } else if (selectedFilter === 'SecondEmail') {
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
+        photos = mapList(res.data, 'SecondEmail');
+      } else if (selectedFilter === 'ThirdEmail') {
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
+        photos = mapList(res.data, 'ThirdEmail');
+      } else {
+        // All
         const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
         const allPhotos = Array.isArray(res.data?.photos) ? res.data.photos : [];
+        // Since uploadedBy may be 'google-drive', assign a synthetic emailKey for color coding
+        const assigned = allPhotos.map(p => {
+          let emailKey = 'FirstEmail';
+          if (p.uploadedBy === allowedEmails?.[1]) emailKey = 'SecondEmail';
+          else if (p.uploadedBy === allowedEmails?.[2]) emailKey = 'ThirdEmail';
+          return buildPhoto(p, emailKey);
+        });
+        photos = assigned.filter(p => p.latitude != null && p.longitude != null);
+      }
 
-        const mapEmailKey = (uploader) => {
-          if (uploader === allowedEmails?.[0]) return 'FirstEmail';
-          if (uploader === allowedEmails?.[1]) return 'SecondEmail';
-          if (uploader === allowedEmails?.[2]) return 'ThirdEmail';
-          return 'FirstEmail';
-        };
-
-        const filtered = allPhotos.filter(p => p.latitude != null && p.longitude != null);
-        const built = filtered.map(p => buildPhoto(p, mapEmailKey(p.uploadedBy)));
-        setImages(built);
+      setImages(photos);
       } catch (err) {
         console.error("❌ Failed to fetch images:", err);
       }
@@ -86,9 +102,10 @@ const Home = () => {
     fetchImages();
   }, [user, selectedFilter]);
 
-  const filters = ['All'];
+// Show filter options explicitly to allow email grouping via dedicated endpoints
+const filters = ['All', 'FirstEmail', 'SecondEmail', 'ThirdEmail'];
 
-  const heatmapData = (typeof window !== 'undefined' && window.google && mapReady)
+const heatmapData = (typeof window !== 'undefined' && window.google && mapReady)
     ? images.map(img => new window.google.maps.LatLng(img.latitude, img.longitude))
     : [];
 
