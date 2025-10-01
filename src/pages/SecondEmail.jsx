@@ -20,20 +20,14 @@ const SecondEmail = () => {
   const fetchPhotos = async () => {
     try {
       setLoading(true);
-      let res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
-      let rawPhotos = Array.isArray(res.data) ? res.data : (res.data.photos || []);
-
-      // Fallback: if endpoint returns empty, fetch all and filter by second email
-      if (!rawPhotos || rawPhotos.length === 0) {
-        const allRes = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-        const allPhotos = Array.isArray(allRes.data?.photos) ? allRes.data.photos : [];
-        const secondEmail = allowedEmails?.[1];
-        rawPhotos = allPhotos.filter(p => p.uploadedBy === secondEmail);
-      }
+      const allRes = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+      const allPhotos = Array.isArray(allRes.data?.photos) ? allRes.data.photos : [];
+      const secondEmail = allowedEmails?.[1];
+      const rawPhotos = allPhotos.filter(p => p.uploadedBy === secondEmail);
 
       const enrichedPhotos = rawPhotos.map((photo) => ({
         ...photo,
-        year: new Date(photo.timestamp).getFullYear(),
+        year: photo.timestamp ? new Date(photo.timestamp).getFullYear() : new Date().getFullYear(),
         district: photo.district || "Unknown",
         fullUrl: photo.cloudinaryUrl
           ? photo.cloudinaryUrl
