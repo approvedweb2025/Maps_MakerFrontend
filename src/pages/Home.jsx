@@ -4,7 +4,6 @@ import axios from 'axios';
 import { useUser } from '../Context/UserContext';
 import { FaDirections } from 'react-icons/fa';
 import { useMap } from '../Context/MapContext';
-import { normalizePhoto } from '../utils/photoUtils';
 
 const containerStyle = { width: '100%', height: '100vh' };
 const pakistanBounds = { north: 37.0, south: 23.5, west: 60.9, east: 77.0 };
@@ -37,6 +36,17 @@ const Home = () => {
   const [showHeatmap, setShowHeatmap] = useState(false);
   const { user } = useUser();
   const { mapCenter, mapZoom } = useMap();
+
+  // helper to normalize image URLs
+  const normalizePhoto = (photo) => {
+    const isObjectId = /^[a-f0-9]{24}$/i.test(String(photo.fileId || ''));
+    const displayUrl = photo.cloudinaryUrl
+      ? photo.cloudinaryUrl
+      : isObjectId
+        ? `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId}`
+        : `https://drive.google.com/uc?export=view&id=${photo.driveFileId || photo.fileId}`;
+    return { ...photo, displayUrl };
+  };
 
   // Dark mode observer
   useEffect(() => {
