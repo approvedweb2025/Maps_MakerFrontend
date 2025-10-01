@@ -35,7 +35,7 @@ const Home = () => {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [mapReady, setMapReady] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState('All');
+  const [selectedEmails, setSelectedEmails] = useState({ FirstEmail: true, SecondEmail: true, ThirdEmail: true });
   const [showHeatmap, setShowHeatmap] = useState(false);
   const { user } = useUser();
   const { mapCenter, mapZoom } = useMap();
@@ -70,45 +70,47 @@ const buildPhoto = (img, emailKey) => {
         (list || []).filter(p => p.latitude != null && p.longitude != null)
           .map(p => buildPhoto(p, emailKey));
 
-      if (selectedFilter === 'FirstEmail') {
-        try {
-          const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
-          photos = mapList(res.data, 'FirstEmail');
-        } catch (_) {
-          const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-          const allPhotos = Array.isArray(resAll.data?.photos) ? resAll.data.photos : [];
-          photos = mapList(allPhotos, 'FirstEmail');
-        }
-      } else if (selectedFilter === 'SecondEmail') {
-        try {
-          const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
-          photos = mapList(res.data, 'SecondEmail');
-        } catch (_) {
-          const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-          const allPhotos = Array.isArray(resAll.data?.photos) ? resAll.data.photos : [];
-          photos = mapList(allPhotos, 'SecondEmail');
-        }
-      } else if (selectedFilter === 'ThirdEmail') {
-        try {
-          const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
-          photos = mapList(res.data, 'ThirdEmail');
-        } catch (_) {
-          const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-          const allPhotos = Array.isArray(resAll.data?.photos) ? resAll.data.photos : [];
-          photos = mapList(allPhotos, 'ThirdEmail');
-        }
-      } else {
-        // All
+      const promises = [];
+      if (selectedEmails.FirstEmail) {
+        promises.push(
+          axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`)
+            .then(res => mapList(res.data, 'FirstEmail'))
+            .catch(async () => {
+              const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+              return mapList(resAll.data?.photos || [], 'FirstEmail');
+            })
+        );
+      }
+      if (selectedEmails.SecondEmail) {
+        promises.push(
+          axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`)
+            .then(res => mapList(res.data, 'SecondEmail'))
+            .catch(async () => {
+              const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+              return mapList(resAll.data?.photos || [], 'SecondEmail');
+            })
+        );
+      }
+      if (selectedEmails.ThirdEmail) {
+        promises.push(
+          axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`)
+            .then(res => mapList(res.data, 'ThirdEmail'))
+            .catch(async () => {
+              const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+              return mapList(resAll.data?.photos || [], 'ThirdEmail');
+            })
+        );
+      }
+
+      // If none selected, default to All
+      if (promises.length === 0) {
         const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
         const allPhotos = Array.isArray(res.data?.photos) ? res.data.photos : [];
-        // Since uploadedBy may be 'google-drive', assign a synthetic emailKey for color coding
-        const assigned = allPhotos.map(p => {
-          let emailKey = 'FirstEmail';
-          if (p.uploadedBy === allowedEmails?.[1]) emailKey = 'SecondEmail';
-          else if (p.uploadedBy === allowedEmails?.[2]) emailKey = 'ThirdEmail';
-          return buildPhoto(p, emailKey);
-        });
-        photos = assigned.filter(p => p.latitude != null && p.longitude != null);
+        photos = allPhotos.filter(p => p.latitude != null && p.longitude != null)
+          .map(p => buildPhoto(p, 'FirstEmail'));
+      } else {
+        const parts = await Promise.all(promises);
+        photos = parts.flat();
       }
 
       setImages(photos);
@@ -118,27 +120,29 @@ const buildPhoto = (img, emailKey) => {
     };
 
     fetchImages();
-  }, [user, selectedFilter]);
+}, [user, selectedEmails]);
 
-// Show filter options explicitly to allow email grouping via dedicated endpoints
-const filters = ['All', 'FirstEmail', 'SecondEmail', 'ThirdEmail'];
+  const toggleEmail = (key) => {
+    setSelectedEmails(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
-const heatmapData = (typeof window !== 'undefined' && window.google && mapReady)
+  const heatmapData = (typeof window !== 'undefined' && window.google && mapReady)
     ? images.map(img => new window.google.maps.LatLng(img.latitude, img.longitude))
     : [];
 
   return (
     <div className="h-screen w-full relative">
       {/* Controls */}
-      <div className="absolute z-10 top-2 left-1/2 transform -translate-x-1/2 flex gap-2 p-2">
-        <select
-          value={selectedFilter}
-          onChange={(e) => setSelectedFilter(e.target.value)}
-          className="border px-3 py-1 dark:bg-zinc-800 bg-white dark:text-white text-black text-center rounded text-sm"
-        >
-          {filters.map(f => <option key={f} value={f}>{f}</option>)}
-        </select>
-
+      <div className="absolute z-10 top-2 left-1/2 transform -translate-x-1/2 flex gap-3 p-2 items-center bg-white/80 dark:bg-zinc-800/60 rounded">
+        <label className="flex items-center gap-1 text-xs sm:text-sm">
+          <input type="checkbox" checked={selectedEmails.FirstEmail} onChange={() => toggleEmail('FirstEmail')} /> First
+        </label>
+        <label className="flex items-center gap-1 text-xs sm:text-sm">
+          <input type="checkbox" checked={selectedEmails.SecondEmail} onChange={() => toggleEmail('SecondEmail')} /> Second
+        </label>
+        <label className="flex items-center gap-1 text-xs sm:text-sm">
+          <input type="checkbox" checked={selectedEmails.ThirdEmail} onChange={() => toggleEmail('ThirdEmail')} /> Third
+        </label>
         <button
           onClick={() => setShowHeatmap(!showHeatmap)}
           className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
