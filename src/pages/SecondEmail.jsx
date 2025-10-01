@@ -22,7 +22,7 @@ const SecondEmail = () => {
       const res = await axios.get(
         `${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`
       );
-      const rawPhotos = res.data.photos || [];
+      const rawPhotos = Array.isArray(res.data) ? res.data : (res.data.photos || []);
 
       const enrichedPhotos = rawPhotos.map((photo) => ({
         ...photo,
