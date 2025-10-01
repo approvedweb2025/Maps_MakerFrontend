@@ -66,6 +66,10 @@ const Images = () => {
             >
               <img
                 src={photo.displayUrl}
+                onError={(e) => {
+                  const id = photo.driveFileId || photo.fileId;
+                  if (id) e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${id}`;
+                }}
                 onClick={() => {
                   setActiveImage(photo.displayUrl);
                   setShowImage(true);
