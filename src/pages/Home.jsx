@@ -71,14 +71,32 @@ const buildPhoto = (img, emailKey) => {
           .map(p => buildPhoto(p, emailKey));
 
       if (selectedFilter === 'FirstEmail') {
-        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
-        photos = mapList(res.data, 'FirstEmail');
+        try {
+          const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
+          photos = mapList(res.data, 'FirstEmail');
+        } catch (_) {
+          const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+          const allPhotos = Array.isArray(resAll.data?.photos) ? resAll.data.photos : [];
+          photos = mapList(allPhotos, 'FirstEmail');
+        }
       } else if (selectedFilter === 'SecondEmail') {
-        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
-        photos = mapList(res.data, 'SecondEmail');
+        try {
+          const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
+          photos = mapList(res.data, 'SecondEmail');
+        } catch (_) {
+          const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+          const allPhotos = Array.isArray(resAll.data?.photos) ? resAll.data.photos : [];
+          photos = mapList(allPhotos, 'SecondEmail');
+        }
       } else if (selectedFilter === 'ThirdEmail') {
-        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
-        photos = mapList(res.data, 'ThirdEmail');
+        try {
+          const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
+          photos = mapList(res.data, 'ThirdEmail');
+        } catch (_) {
+          const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+          const allPhotos = Array.isArray(resAll.data?.photos) ? resAll.data.photos : [];
+          photos = mapList(allPhotos, 'ThirdEmail');
+        }
       } else {
         // All
         const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
