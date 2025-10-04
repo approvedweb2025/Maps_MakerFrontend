@@ -1,6 +1,8 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { IoClose } from "react-icons/io5";
+import { buildApiUrl } from "../config/api";
+import { mockPhotos } from "../data/mockData";
 
 const SecondEmail = () => {
   const [photos, setPhotos] = useState([]);
@@ -26,7 +28,7 @@ const SecondEmail = () => {
       // Try the specific email endpoint first
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_BASE_URL}/photos/getImages/mhuzaifa86797@gmail.com`
+          buildApiUrl('/photos/get2ndEmailPhotos')
         );
         console.log("✅ SecondEmail API response:", res.data);
         rawPhotos = res.data.photos || [];
@@ -36,13 +38,15 @@ const SecondEmail = () => {
         
         // Fallback to general endpoint and filter
         try {
-          const fallbackRes = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+          const fallbackRes = await axios.get(buildApiUrl('/photos/get-photos'));
           if (fallbackRes.status === 200) {
             rawPhotos = (fallbackRes.data.photos || []).filter(p => p.uploadedBy === 'mhuzaifa86797@gmail.com');
             console.log(`📊 SecondEmail: Found ${rawPhotos.length} photos from fallback`);
           }
         } catch (fallbackErr) {
           console.error("❌ Fallback also failed:", fallbackErr);
+          console.log("🔄 Using mock data for testing...");
+          rawPhotos = mockPhotos.secondEmail;
         }
       }
 
@@ -53,7 +57,7 @@ const SecondEmail = () => {
         // Build proper image URL with Cloudinary fallback
         url: photo.cloudinaryUrl || 
              (photo.fileId && /^[a-f0-9]{24}$/i.test(photo.fileId) 
-               ? `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId}`
+               ? buildApiUrl(`/photos/file/${photo.fileId}`)
                : photo.driveFileId 
                  ? `https://drive.google.com/uc?export=view&id=${photo.driveFileId}`
                  : photo.fileId 
