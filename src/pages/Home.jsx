@@ -5,7 +5,6 @@ import { useUser } from '../Context/UserContext';
 import { FaDirections } from 'react-icons/fa';
 import { useMap } from '../Context/MapContext';
 import { buildApiUrl } from '../config/api';
-import { mockPhotos } from '../data/mockData';
 
 const containerStyle = { width: '100%', height: '100vh' };
 const pakistanBounds = { north: 37.0, south: 23.5, west: 60.9, east: 77.0 };
@@ -74,18 +73,11 @@ const Home = () => {
         const images = res.data.photos || res.data; // Handle both formats
         console.log("✅ FirstEmail: Processed images:", images.length);
         
-        // If no images found, use mock data
-        if (images.length === 0) {
-          console.log("🔄 No images from API, using mock data for First Email...");
-          return mockPhotos.firstEmail.map(img => buildPhoto(img, 'FirstEmail'));
-        }
-        
         return images.map(img => buildPhoto(img, 'FirstEmail'));
       } catch (err) {
         console.error('❌ Error fetching First Email photos:', err);
         console.error('❌ Error details:', err.response?.data || err.message);
-        console.log('🔄 Using mock data for First Email...');
-        return mockPhotos.firstEmail.map(img => buildPhoto(img, 'FirstEmail'));
+        return []; // Return empty array instead of mock data
       }
     },
     SecondEmail: async () => {
@@ -97,18 +89,11 @@ const Home = () => {
         const images = res.data.photos || res.data; // Handle both formats
         console.log("✅ SecondEmail: Processed images:", images.length);
         
-        // If no images found, use mock data
-        if (images.length === 0) {
-          console.log("🔄 No images from API, using mock data for Second Email...");
-          return mockPhotos.secondEmail.map(img => buildPhoto(img, 'SecondEmail'));
-        }
-        
         return images.map(img => buildPhoto(img, 'SecondEmail'));
       } catch (err) {
         console.error('❌ Error fetching Second Email photos:', err);
         console.error('❌ Error details:', err.response?.data || err.message);
-        console.log('🔄 Using mock data for Second Email...');
-        return mockPhotos.secondEmail.map(img => buildPhoto(img, 'SecondEmail'));
+        return []; // Return empty array instead of mock data
       }
     },
     ThirdEmail: async () => {
@@ -120,18 +105,11 @@ const Home = () => {
         const images = res.data.photos || res.data; // Handle both formats
         console.log("✅ ThirdEmail: Processed images:", images.length);
         
-        // If no images found, use mock data
-        if (images.length === 0) {
-          console.log("🔄 No images from API, using mock data for Third Email...");
-          return mockPhotos.thirdEmail.map(img => buildPhoto(img, 'ThirdEmail'));
-        }
-        
         return images.map(img => buildPhoto(img, 'ThirdEmail'));
       } catch (err) {
         console.error('❌ Error fetching Third Email photos:', err);
         console.error('❌ Error details:', err.response?.data || err.message);
-        console.log('🔄 Using mock data for Third Email...');
-        return mockPhotos.thirdEmail.map(img => buildPhoto(img, 'ThirdEmail'));
+        return []; // Return empty array instead of mock data
       }
     },
   };
