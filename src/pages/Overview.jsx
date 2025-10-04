@@ -10,6 +10,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
+import CloudinaryOrganizer from "../components/CloudinaryOrganizer";
 
 // -----------------------------
 // Helpers
@@ -248,6 +249,9 @@ const Overview = () => {
   // -----------------------------
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+      {/* Cloudinary Organizer */}
+      <CloudinaryOrganizer />
+      
       {/* Users */}
       <div className="flex flex-col sm:flex-row items-center justify-between bg-gray-200 dark:bg-zinc-800 p-4 rounded-lg">
         <h1 className="text-xl sm:text-2xl font-bold uppercase text-gray-800 dark:text-white text-center sm:text-left">
