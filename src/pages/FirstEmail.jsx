@@ -33,6 +33,12 @@ const FirstEmail = () => {
         console.log("✅ FirstEmail API response:", res.data);
         rawPhotos = res.data.photos || [];
         console.log(`📊 FirstEmail: Found ${rawPhotos.length} photos from specific endpoint`);
+        
+        // If no photos found, use mock data
+        if (rawPhotos.length === 0) {
+          console.log("🔄 No photos from API, using mock data...");
+          rawPhotos = mockPhotos.firstEmail;
+        }
       } catch (endpointErr) {
         console.log("⚠️ Specific endpoint failed, trying fallback...", endpointErr.message);
         
