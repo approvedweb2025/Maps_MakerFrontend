@@ -5,6 +5,7 @@ import { buildApiUrl } from '../config/api';
 const CloudinaryOrganizer = () => {
   const [isOrganizing, setIsOrganizing] = useState(false);
   const [isCreatingFolders, setIsCreatingFolders] = useState(false);
+  const [isCreatingFoldersSimple, setIsCreatingFoldersSimple] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
@@ -50,6 +51,27 @@ const CloudinaryOrganizer = () => {
     }
   };
 
+  const createFoldersSimple = async () => {
+    try {
+      setIsCreatingFoldersSimple(true);
+      setError(null);
+      setResult(null);
+
+      console.log('🔄 Creating Cloudinary folders (simple approach)...');
+      
+      const response = await axios.post(buildApiUrl('/photos/create-folders-simple'));
+      
+      console.log('✅ Folders created:', response.data);
+      setResult(response.data);
+      
+    } catch (err) {
+      console.error('❌ Create folders simple failed:', err);
+      setError(err.response?.data || err.message || 'Create folders simple failed');
+    } finally {
+      setIsCreatingFoldersSimple(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white dark:bg-zinc-900 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">
@@ -72,12 +94,31 @@ const CloudinaryOrganizer = () => {
 
       <div className="flex flex-wrap gap-4 mb-6">
         <button
-          onClick={createFolders}
-          disabled={isOrganizing || isCreatingFolders}
+          onClick={createFoldersSimple}
+          disabled={isOrganizing || isCreatingFolders || isCreatingFoldersSimple}
           className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-            isOrganizing || isCreatingFolders
+            isOrganizing || isCreatingFolders || isCreatingFoldersSimple
               ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
               : 'bg-green-600 hover:bg-green-700 text-white'
+          }`}
+        >
+          {isCreatingFoldersSimple ? (
+            <span className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Creating Folders...
+            </span>
+          ) : (
+            '📁 Create Folders (Simple)'
+          )}
+        </button>
+        
+        <button
+          onClick={createFolders}
+          disabled={isOrganizing || isCreatingFolders || isCreatingFoldersSimple}
+          className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+            isOrganizing || isCreatingFolders || isCreatingFoldersSimple
+              ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+              : 'bg-orange-600 hover:bg-orange-700 text-white'
           }`}
         >
           {isCreatingFolders ? (
@@ -86,15 +127,15 @@ const CloudinaryOrganizer = () => {
               Creating Folders...
             </span>
           ) : (
-            '📁 Create Folders'
+            '📁 Create Folders (Advanced)'
           )}
         </button>
         
         <button
           onClick={organizeImages}
-          disabled={isOrganizing || isCreatingFolders}
+          disabled={isOrganizing || isCreatingFolders || isCreatingFoldersSimple}
           className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-            isOrganizing || isCreatingFolders
+            isOrganizing || isCreatingFolders || isCreatingFoldersSimple
               ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-700 text-white'
           }`}
