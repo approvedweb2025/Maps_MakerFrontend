@@ -54,7 +54,11 @@ const FirstEmail = () => {
         url: photo.cloudinaryUrl || 
              (photo.fileId && /^[a-f0-9]{24}$/i.test(photo.fileId) 
                ? `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId}`
-               : `https://drive.google.com/uc?export=view&id=${photo.driveFileId || photo.fileId}`)
+               : photo.driveFileId 
+                 ? `https://drive.google.com/uc?export=view&id=${photo.driveFileId}`
+                 : photo.fileId 
+                   ? `https://drive.google.com/uc?export=view&id=${photo.fileId}`
+                   : '')
       }));
 
       setPhotos(enrichedPhotos);
@@ -70,6 +74,17 @@ const FirstEmail = () => {
       setPhotosByYear(groupBy(enrichedPhotos, "year"));
       setPhotosByDistrict(groupBy(enrichedPhotos, "district"));
       console.log(`🎯 FirstEmail: Processed ${enrichedPhotos.length} photos`);
+      
+      // Debug: Log first few photo URLs
+      if (enrichedPhotos.length > 0) {
+        console.log("🔍 FirstEmail: Sample photo URLs:", enrichedPhotos.slice(0, 3).map(p => ({ 
+          name: p.name, 
+          url: p.url, 
+          cloudinaryUrl: p.cloudinaryUrl,
+          fileId: p.fileId,
+          driveFileId: p.driveFileId 
+        })));
+      }
     } catch (err) {
       console.error("❌ Error fetching photos:", err);
     } finally {
@@ -102,24 +117,34 @@ const FirstEmail = () => {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {images.slice(0, 6).map((photo) => (
-          <img
-            key={photo.fileId}
-            src={photo.url}
-            alt={photo.name}
-            className="rounded w-full h-28 object-cover cursor-pointer"
-            onClick={() => {
-              setPreviewImage(photo.url);
-              setIsFullscreen(false);
-              setZoom(1);
-            }}
-            onError={(e) => {
-              // Fallback to Google Drive if Cloudinary fails
-              const fallbackId = photo.driveFileId || photo.fileId;
-              if (fallbackId) {
-                e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${fallbackId}`;
-              }
-            }}
-          />
+          <div key={photo.fileId} className="relative">
+            <img
+              src={photo.url}
+              alt={photo.name}
+              className="rounded w-full h-28 object-cover cursor-pointer"
+              onClick={() => {
+                setPreviewImage(photo.url);
+                setIsFullscreen(false);
+                setZoom(1);
+              }}
+              onError={(e) => {
+                console.log(`❌ FirstEmail: Image failed to load: ${photo.url}`);
+                // Fallback to Google Drive if Cloudinary fails
+                const fallbackId = photo.driveFileId || photo.fileId;
+                if (fallbackId) {
+                  console.log(`🔄 FirstEmail: Trying fallback URL for ${photo.name}`);
+                  e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${fallbackId}`;
+                } else {
+                  console.log(`❌ FirstEmail: No fallback available for ${photo.name}`);
+                }
+              }}
+            />
+            {!photo.url && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded">
+                <span className="text-gray-500 text-sm">Loading...</span>
+              </div>
+            )}
+          </div>
         ))}
       </div>
     </div>
@@ -158,6 +183,11 @@ const FirstEmail = () => {
       {/* Content */}
       {loading ? (
         <p className="text-center text-gray-500">Loading photos...</p>
+      ) : photos.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg mb-4">No photos found for this email</p>
+          <p className="text-gray-400 text-sm">Check the browser console for debugging information</p>
+        </div>
       ) : activeTab === "year" ? (
         Object.entries(photosByYear)
           .sort((a, b) => b[0] - a[0])
@@ -198,10 +228,14 @@ const FirstEmail = () => {
                     setZoom(1);
                   }}
                   onError={(e) => {
+                    console.log(`❌ FirstEmail Modal: Image failed to load: ${photo.url}`);
                     // Fallback to Google Drive if Cloudinary fails
                     const fallbackId = photo.driveFileId || photo.fileId;
                     if (fallbackId) {
+                      console.log(`🔄 FirstEmail Modal: Trying fallback URL for ${photo.name}`);
                       e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${fallbackId}`;
+                    } else {
+                      console.log(`❌ FirstEmail Modal: No fallback available for ${photo.name}`);
                     }
                   }}
                 />
