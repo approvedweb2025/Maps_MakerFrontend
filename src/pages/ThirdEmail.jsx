@@ -2,7 +2,6 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { IoClose } from "react-icons/io5";
 import { buildApiUrl } from "../config/api";
-import { mockPhotos } from "../data/mockData";
 
 const ThirdEmail = () => {
   const [photos, setPhotos] = useState([]);
@@ -33,12 +32,6 @@ const ThirdEmail = () => {
         console.log("✅ ThirdEmail API response:", res.data);
         rawPhotos = res.data.photos || [];
         console.log(`📊 ThirdEmail: Found ${rawPhotos.length} photos from specific endpoint`);
-        
-        // If no photos found, use mock data
-        if (rawPhotos.length === 0) {
-          console.log("🔄 No photos from API, using mock data...");
-          rawPhotos = mockPhotos.thirdEmail;
-        }
       } catch (endpointErr) {
         console.log("⚠️ Specific endpoint failed, trying fallback...", endpointErr.message);
         
@@ -51,8 +44,7 @@ const ThirdEmail = () => {
           }
         } catch (fallbackErr) {
           console.error("❌ Fallback also failed:", fallbackErr);
-          console.log("🔄 Using mock data for testing...");
-          rawPhotos = mockPhotos.thirdEmail;
+          rawPhotos = []; // Return empty array instead of mock data
         }
       }
 
