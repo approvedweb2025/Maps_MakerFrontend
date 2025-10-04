@@ -134,20 +134,43 @@ const buildPhoto = (img, emailKey) => {
   return (
     <div className="h-screen w-full relative">
       {/* Controls */}
-      <div className="absolute z-10 top-2 left-1/2 transform -translate-x-1/2 flex gap-3 p-2 items-center bg-white/80 dark:bg-zinc-800/60 rounded">
-        <label className="flex items-center gap-1 text-xs sm:text-sm">
-          <input type="checkbox" checked={selectedEmails.FirstEmail} onChange={() => toggleEmail('FirstEmail')} /> First
+      <div className="absolute z-10 top-2 left-1/2 transform -translate-x-1/2 flex gap-3 p-3 items-center bg-white/90 dark:bg-zinc-800/90 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700">
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+          <input 
+            type="checkbox" 
+            checked={selectedEmails.FirstEmail} 
+            onChange={() => toggleEmail('FirstEmail')}
+            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+          /> 
+          First
         </label>
-        <label className="flex items-center gap-1 text-xs sm:text-sm">
-          <input type="checkbox" checked={selectedEmails.SecondEmail} onChange={() => toggleEmail('SecondEmail')} /> Second
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+          <input 
+            type="checkbox" 
+            checked={selectedEmails.SecondEmail} 
+            onChange={() => toggleEmail('SecondEmail')}
+            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+          /> 
+          Second
         </label>
-        <label className="flex items-center gap-1 text-xs sm:text-sm">
-          <input type="checkbox" checked={selectedEmails.ThirdEmail} onChange={() => toggleEmail('ThirdEmail')} /> Third
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+          <input 
+            type="checkbox" 
+            checked={selectedEmails.ThirdEmail} 
+            onChange={() => toggleEmail('ThirdEmail')}
+            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+          /> 
+          Third
         </label>
-        <button onClick={selectAll} className="px-2 py-1 bg-gray-200 dark:bg-zinc-700 rounded text-xs sm:text-sm">All</button>
+        <button 
+          onClick={selectAll} 
+          className="px-3 py-1.5 bg-gray-200 dark:bg-zinc-700 hover:bg-gray-300 dark:hover:bg-zinc-600 rounded text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors"
+        >
+          All
+        </button>
         <button
           onClick={() => setShowHeatmap(!showHeatmap)}
-          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+          className="px-4 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium transition-colors"
         >
           {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
         </button>
