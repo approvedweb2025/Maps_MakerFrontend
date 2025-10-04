@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useUser } from '../Context/UserContext';
 import { FaDirections } from 'react-icons/fa';
 import { useMap } from '../Context/MapContext';
+import { buildApiUrl } from '../config/api';
 
 const containerStyle = { width: '100%', height: '100vh' };
 const pakistanBounds = { north: 37.0, south: 23.5, west: 60.9, east: 77.0 };
@@ -56,7 +57,7 @@ const Home = () => {
     const primaryUrl = img.cloudinaryUrl
       ? img.cloudinaryUrl
       : (isObjectId
-        ? `${import.meta.env.VITE_BASE_URL}/photos/file/${img.fileId}`
+        ? buildApiUrl(`/photos/file/${img.fileId}`)
         : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
     return { ...img, emailKey, url: primaryUrl };
   };
@@ -65,8 +66,8 @@ const Home = () => {
   const fetchPhotos = {
     FirstEmail: async () => {
       try {
-        console.log("🔄 FirstEmail: API URL:", `${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
-        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
+        console.log('🔄 FirstEmail: API URL:', buildApiUrl('/photos/get1stEmailPhotos'));
+        const res = await axios.get(buildApiUrl('/photos/get1stEmailPhotos'));
         console.log("✅ FirstEmail: Response status:", res.status);
         console.log("✅ FirstEmail: Response data:", res.data);
         const images = res.data.photos || res.data; // Handle both formats
@@ -80,8 +81,8 @@ const Home = () => {
     },
     SecondEmail: async () => {
       try {
-        console.log("🔄 SecondEmail: API URL:", `${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
-        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
+        console.log('🔄 SecondEmail: API URL:', buildApiUrl('/photos/get2ndEmailPhotos'));
+        const res = await axios.get(buildApiUrl('/photos/get2ndEmailPhotos'));
         console.log("✅ SecondEmail: Response status:", res.status);
         console.log("✅ SecondEmail: Response data:", res.data);
         const images = res.data.photos || res.data; // Handle both formats
@@ -95,8 +96,8 @@ const Home = () => {
     },
     ThirdEmail: async () => {
       try {
-        console.log("🔄 ThirdEmail: API URL:", `${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
-        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
+        console.log('🔄 ThirdEmail: API URL:', buildApiUrl('/photos/get3rdEmailPhotos'));
+        const res = await axios.get(buildApiUrl('/photos/get3rdEmailPhotos'));
         console.log("✅ ThirdEmail: Response status:", res.status);
         console.log("✅ ThirdEmail: Response data:", res.data);
         const images = res.data.photos || res.data; // Handle both formats
