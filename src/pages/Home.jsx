@@ -4,7 +4,6 @@ import axios from 'axios';
 import { useUser } from '../Context/UserContext';
 import { FaDirections } from 'react-icons/fa';
 import { useMap } from '../Context/MapContext';
-import { allowedEmails } from "../../utils/allowedEmail";
 
 const containerStyle = { width: '100%', height: '100vh' };
 const pakistanBounds = { north: 37.0, south: 23.5, west: 60.9, east: 77.0 };
@@ -35,7 +34,7 @@ const Home = () => {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [mapReady, setMapReady] = useState(false);
-  const [selectedEmails, setSelectedEmails] = useState({ FirstEmail: true, SecondEmail: true, ThirdEmail: true });
+  const [selectedFilter, setSelectedFilter] = useState('All');
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
@@ -51,8 +50,8 @@ const Home = () => {
     return () => observer.disconnect();
   }, []);
 
-// ✅ Build a reliable display URL: Cloudinary → GridFS stream → Google Drive
-const buildPhoto = (img, emailKey) => {
+  // ✅ Build a reliable display URL: Cloudinary → GridFS stream → Google Drive
+  const buildPhoto = (img, emailKey) => {
     const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
     const primaryUrl = img.cloudinaryUrl
       ? img.cloudinaryUrl
@@ -62,134 +61,74 @@ const buildPhoto = (img, emailKey) => {
     return { ...img, emailKey, url: primaryUrl };
   };
 
+  // Fetch images from backend
+  const fetchPhotos = {
+    FirstEmail: async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
+        return res.data.map(img => buildPhoto(img, 'FirstEmail'));
+      } catch (err) {
+        console.error('Error fetching First Email photos:', err);
+        return [];
+      }
+    },
+    SecondEmail: async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
+        return res.data.map(img => buildPhoto(img, 'SecondEmail'));
+      } catch (err) {
+        console.error('Error fetching Second Email photos:', err);
+        return [];
+      }
+    },
+    ThirdEmail: async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
+        return res.data.map(img => buildPhoto(img, 'ThirdEmail'));
+      } catch (err) {
+        console.error('Error fetching Third Email photos:', err);
+        return [];
+      }
+    },
+  };
+
   useEffect(() => {
     const fetchImages = async () => {
       try {
         setIsLoading(true);
-        console.log("🔄 Fetching images for selected emails:", selectedEmails);
-        let photos = [];
-
-        const mapList = (list, emailKey) => {
-          const filtered = (list || []).filter(p => p.latitude != null && p.longitude != null);
-          console.log(`📊 ${emailKey}: Found ${filtered.length} valid photos`);
-          return filtered.map(p => buildPhoto(p, emailKey));
-        };
-
-        const promises = [];
-        if (selectedEmails.FirstEmail) {
-          console.log("📧 Fetching First Email photos...");
-          promises.push(
-            axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`)
-              .then(res => {
-                console.log("✅ First Email API response:", res.data);
-                // Backend returns images directly, not wrapped in a photos property
-                return mapList(res.data, 'FirstEmail');
-              })
-              .catch(async (err) => {
-                console.log("⚠️ First Email API failed, trying fallback:", err.message);
-                const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-                return mapList(resAll.data?.photos || [], 'FirstEmail');
-              })
-          );
-        }
-        if (selectedEmails.SecondEmail) {
-          console.log("📧 Fetching Second Email photos...");
-          promises.push(
-            axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`)
-              .then(res => {
-                console.log("✅ Second Email API response:", res.data);
-                // Backend returns images directly, not wrapped in a photos property
-                return mapList(res.data, 'SecondEmail');
-              })
-              .catch(async (err) => {
-                console.log("⚠️ Second Email API failed, trying fallback:", err.message);
-                const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-                return mapList(resAll.data?.photos || [], 'SecondEmail');
-              })
-          );
-        }
-        if (selectedEmails.ThirdEmail) {
-          console.log("📧 Fetching Third Email photos...");
-          promises.push(
-            axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`)
-              .then(res => {
-                console.log("✅ Third Email API response:", res.data);
-                // Backend returns images directly, not wrapped in a photos property
-                return mapList(res.data, 'ThirdEmail');
-              })
-              .catch(async (err) => {
-                console.log("⚠️ Third Email API failed, trying fallback:", err.message);
-                const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-                return mapList(resAll.data?.photos || [], 'ThirdEmail');
-              })
-          );
-        }
-
-        // If none selected, show nothing
-        if (promises.length === 0) {
-          console.log("❌ No email filters selected");
-          setImages([]);
-          return;
+        let all = [];
+        const permissions = [];
+        
+        if (user?.role === 'admin') {
+          permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
         } else {
-          try {
-            const parts = await Promise.all(promises);
-            photos = parts.flat();
-            console.log(`🎯 Total photos loaded: ${photos.length}`);
-            
-            // If no photos loaded from specific endpoints, try fallback
-            if (photos.length === 0) {
-              console.log("🔄 No photos from specific endpoints, trying fallback...");
-              const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-              const allPhotos = resAll.data?.photos || [];
-              console.log(`📊 Fallback: Found ${allPhotos.length} total photos`);
-              
-              // Filter by selected emails
-              const emailMap = {
-                FirstEmail: 'mhuzaifa8519@gmail.com',
-                SecondEmail: 'mhuzaifa86797@gmail.com', 
-                ThirdEmail: 'muhammadjig8@gmail.com'
-              };
-              
-              const filteredPhotos = allPhotos.filter(photo => {
-                const email = photo.uploadedBy;
-                return Object.entries(selectedEmails).some(([key, selected]) => 
-                  selected && email === emailMap[key]
-                );
-              });
-              
-              console.log(`🎯 Fallback: Found ${filteredPhotos.length} photos matching selected emails`);
-              photos = filteredPhotos.map(photo => {
-                const emailKey = Object.entries(emailMap).find(([_, email]) => email === photo.uploadedBy)?.[0] || 'FirstEmail';
-                return buildPhoto(photo, emailKey);
-              });
-            }
-          } catch (err) {
-            console.error("❌ Error loading photos:", err);
-            photos = [];
+          if (user?.permissions?.includes('FirstEmail')) permissions.push('FirstEmail');
+          if (user?.permissions?.includes('SecondEmail')) permissions.push('SecondEmail');
+          if (user?.permissions?.includes('ThirdEmail')) permissions.push('ThirdEmail');
+        }
+
+        for (const emailKey of permissions) {
+          if (selectedFilter === 'All' || selectedFilter === emailKey) {
+            const data = await fetchPhotos[emailKey]();
+            all.push(...data);
           }
         }
-
-        setImages(photos);
+        
+        setImages(all);
       } catch (err) {
         console.error("❌ Failed to fetch images:", err);
       } finally {
         setIsLoading(false);
       }
     };
-
+    
     fetchImages();
-  }, [user, selectedEmails]);
+  }, [user, selectedFilter]);
 
-  const toggleEmail = (key) => {
-    setSelectedEmails(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-  const selectAll = () => {
-    setSelectedEmails({ FirstEmail: true, SecondEmail: true, ThirdEmail: true });
-  };
-
-  const clearAll = () => {
-    setSelectedEmails({ FirstEmail: false, SecondEmail: false, ThirdEmail: false });
-  };
+  const filters = ['All'];
+  if (user?.role === 'admin' || user?.permissions?.includes('FirstEmail')) filters.push('FirstEmail');
+  if (user?.role === 'admin' || user?.permissions?.includes('SecondEmail')) filters.push('SecondEmail');
+  if (user?.role === 'admin' || user?.permissions?.includes('ThirdEmail')) filters.push('ThirdEmail');
 
   const heatmapData = (typeof window !== 'undefined' && window.google && mapReady)
     ? images.map(img => new window.google.maps.LatLng(img.latitude, img.longitude))
@@ -208,45 +147,14 @@ const buildPhoto = (img, emailKey) => {
         <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
           Images: {images.length}
         </div>
-        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
-          <input 
-            type="checkbox" 
-            checked={selectedEmails.FirstEmail} 
-            onChange={() => toggleEmail('FirstEmail')}
-            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-          /> 
-          First
-        </label>
-        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
-          <input 
-            type="checkbox" 
-            checked={selectedEmails.SecondEmail} 
-            onChange={() => toggleEmail('SecondEmail')}
-            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-          /> 
-          Second
-        </label>
-        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
-          <input 
-            type="checkbox" 
-            checked={selectedEmails.ThirdEmail} 
-            onChange={() => toggleEmail('ThirdEmail')}
-            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-          /> 
-          Third
-        </label>
-        <button 
-          onClick={selectAll} 
-          className="px-3 py-1.5 bg-gray-200 dark:bg-zinc-700 hover:bg-gray-300 dark:hover:bg-zinc-600 rounded text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors"
+        <select
+          value={selectedFilter}
+          onChange={(e) => setSelectedFilter(e.target.value)}
+          className="border px-3 py-1.5 dark:bg-zinc-700 bg-white dark:text-white text-black text-center rounded text-sm font-medium"
         >
-          All
-        </button>
-        <button 
-          onClick={clearAll} 
-          className="px-3 py-1.5 bg-red-200 dark:bg-red-700 hover:bg-red-300 dark:hover:bg-red-600 rounded text-sm font-medium text-red-700 dark:text-red-300 transition-colors"
-        >
-          Clear
-        </button>
+          {filters.map(f => <option key={f} value={f}>{f}</option>)}
+        </select>
+
         <button
           onClick={() => setShowHeatmap(!showHeatmap)}
           className="px-4 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium transition-colors"
