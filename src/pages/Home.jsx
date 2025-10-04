@@ -35,8 +35,9 @@ const Home = () => {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [mapReady, setMapReady] = useState(false);
-  const [selectedEmails, setSelectedEmails] = useState({ FirstEmail: false, SecondEmail: false, ThirdEmail: false });
+  const [selectedEmails, setSelectedEmails] = useState({ FirstEmail: true, SecondEmail: true, ThirdEmail: true });
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
   const { mapCenter, mapZoom } = useMap();
 
@@ -64,61 +65,84 @@ const buildPhoto = (img, emailKey) => {
   useEffect(() => {
     const fetchImages = async () => {
       try {
-      let photos = [];
+        setIsLoading(true);
+        console.log("🔄 Fetching images for selected emails:", selectedEmails);
+        let photos = [];
 
-      const mapList = (list, emailKey) =>
-        (list || []).filter(p => p.latitude != null && p.longitude != null)
-          .map(p => buildPhoto(p, emailKey));
+        const mapList = (list, emailKey) => {
+          const filtered = (list || []).filter(p => p.latitude != null && p.longitude != null);
+          console.log(`📊 ${emailKey}: Found ${filtered.length} valid photos`);
+          return filtered.map(p => buildPhoto(p, emailKey));
+        };
 
-      const promises = [];
-      if (selectedEmails.FirstEmail) {
-        promises.push(
-          axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`)
-            .then(res => mapList(res.data, 'FirstEmail'))
-            .catch(async () => {
-              const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-              return mapList(resAll.data?.photos || [], 'FirstEmail');
-            })
-        );
-      }
-      if (selectedEmails.SecondEmail) {
-        promises.push(
-          axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`)
-            .then(res => mapList(res.data, 'SecondEmail'))
-            .catch(async () => {
-              const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-              return mapList(resAll.data?.photos || [], 'SecondEmail');
-            })
-        );
-      }
-      if (selectedEmails.ThirdEmail) {
-        promises.push(
-          axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`)
-            .then(res => mapList(res.data, 'ThirdEmail'))
-            .catch(async () => {
-              const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-              return mapList(resAll.data?.photos || [], 'ThirdEmail');
-            })
-        );
-      }
+        const promises = [];
+        if (selectedEmails.FirstEmail) {
+          console.log("📧 Fetching First Email photos...");
+          promises.push(
+            axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`)
+              .then(res => {
+                console.log("✅ First Email API response:", res.data);
+                return mapList(res.data, 'FirstEmail');
+              })
+              .catch(async (err) => {
+                console.log("⚠️ First Email API failed, trying fallback:", err.message);
+                const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+                return mapList(resAll.data?.photos || [], 'FirstEmail');
+              })
+          );
+        }
+        if (selectedEmails.SecondEmail) {
+          console.log("📧 Fetching Second Email photos...");
+          promises.push(
+            axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`)
+              .then(res => {
+                console.log("✅ Second Email API response:", res.data);
+                return mapList(res.data, 'SecondEmail');
+              })
+              .catch(async (err) => {
+                console.log("⚠️ Second Email API failed, trying fallback:", err.message);
+                const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+                return mapList(resAll.data?.photos || [], 'SecondEmail');
+              })
+          );
+        }
+        if (selectedEmails.ThirdEmail) {
+          console.log("📧 Fetching Third Email photos...");
+          promises.push(
+            axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`)
+              .then(res => {
+                console.log("✅ Third Email API response:", res.data);
+                return mapList(res.data, 'ThirdEmail');
+              })
+              .catch(async (err) => {
+                console.log("⚠️ Third Email API failed, trying fallback:", err.message);
+                const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+                return mapList(resAll.data?.photos || [], 'ThirdEmail');
+              })
+          );
+        }
 
-      // If none selected, show nothing
-      if (promises.length === 0) {
-        setImages([]);
-        return;
-      } else {
-        const parts = await Promise.all(promises);
-        photos = parts.flat();
-      }
+        // If none selected, show nothing
+        if (promises.length === 0) {
+          console.log("❌ No email filters selected");
+          setImages([]);
+          return;
+        } else {
+          const parts = await Promise.all(promises);
+          photos = parts.flat();
+          console.log(`🎯 Total photos loaded: ${photos.length}`);
+        }
 
-      setImages(photos);
+        setImages(photos);
       } catch (err) {
         console.error("❌ Failed to fetch images:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchImages();
-}, [user, selectedEmails]);
+  }, [user, selectedEmails]);
 
   const toggleEmail = (key) => {
     setSelectedEmails(prev => ({ ...prev, [key]: !prev[key] }));
@@ -135,6 +159,15 @@ const buildPhoto = (img, emailKey) => {
     <div className="h-screen w-full relative">
       {/* Controls */}
       <div className="absolute z-10 top-2 left-1/2 transform -translate-x-1/2 flex gap-3 p-3 items-center bg-white/90 dark:bg-zinc-800/90 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700">
+        {isLoading && (
+          <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            Loading...
+          </div>
+        )}
+        <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          Images: {images.length}
+        </div>
         <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
           <input 
             type="checkbox" 
