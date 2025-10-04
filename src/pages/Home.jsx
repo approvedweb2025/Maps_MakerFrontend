@@ -65,31 +65,46 @@ const Home = () => {
   const fetchPhotos = {
     FirstEmail: async () => {
       try {
+        console.log("🔄 FirstEmail: API URL:", `${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
         const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
+        console.log("✅ FirstEmail: Response status:", res.status);
+        console.log("✅ FirstEmail: Response data:", res.data);
         const images = res.data.photos || res.data; // Handle both formats
+        console.log("✅ FirstEmail: Processed images:", images.length);
         return images.map(img => buildPhoto(img, 'FirstEmail'));
       } catch (err) {
-        console.error('Error fetching First Email photos:', err);
+        console.error('❌ Error fetching First Email photos:', err);
+        console.error('❌ Error details:', err.response?.data || err.message);
         return [];
       }
     },
     SecondEmail: async () => {
       try {
+        console.log("🔄 SecondEmail: API URL:", `${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
         const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
+        console.log("✅ SecondEmail: Response status:", res.status);
+        console.log("✅ SecondEmail: Response data:", res.data);
         const images = res.data.photos || res.data; // Handle both formats
+        console.log("✅ SecondEmail: Processed images:", images.length);
         return images.map(img => buildPhoto(img, 'SecondEmail'));
       } catch (err) {
-        console.error('Error fetching Second Email photos:', err);
+        console.error('❌ Error fetching Second Email photos:', err);
+        console.error('❌ Error details:', err.response?.data || err.message);
         return [];
       }
     },
     ThirdEmail: async () => {
       try {
+        console.log("🔄 ThirdEmail: API URL:", `${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
         const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
+        console.log("✅ ThirdEmail: Response status:", res.status);
+        console.log("✅ ThirdEmail: Response data:", res.data);
         const images = res.data.photos || res.data; // Handle both formats
+        console.log("✅ ThirdEmail: Processed images:", images.length);
         return images.map(img => buildPhoto(img, 'ThirdEmail'));
       } catch (err) {
-        console.error('Error fetching Third Email photos:', err);
+        console.error('❌ Error fetching Third Email photos:', err);
+        console.error('❌ Error details:', err.response?.data || err.message);
         return [];
       }
     },
@@ -99,24 +114,55 @@ const Home = () => {
     const fetchImages = async () => {
       try {
         setIsLoading(true);
+        console.log("🔄 Fetching images - User:", user);
+        console.log("🔄 Selected filter:", selectedFilter);
+        
+        // First try the email-specific approach
         let all = [];
         const permissions = [];
         
-        if (user?.role === 'admin') {
-          permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
-        } else {
-          if (user?.permissions?.includes('FirstEmail')) permissions.push('FirstEmail');
-          if (user?.permissions?.includes('SecondEmail')) permissions.push('SecondEmail');
-          if (user?.permissions?.includes('ThirdEmail')) permissions.push('ThirdEmail');
-        }
+        // For now, let's always show all emails to debug
+        permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
+        
+        console.log("🔄 Permissions:", permissions);
 
         for (const emailKey of permissions) {
           if (selectedFilter === 'All' || selectedFilter === emailKey) {
+            console.log(`🔄 Fetching ${emailKey} images...`);
             const data = await fetchPhotos[emailKey]();
+            console.log(`✅ ${emailKey} returned ${data.length} images`);
             all.push(...data);
           }
         }
         
+        // If no images found, try the fallback approach (same as Images.jsx)
+        if (all.length === 0) {
+          console.log("🔄 No images from email endpoints, trying fallback...");
+          try {
+            const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+            if (response.status === 200) {
+              const fallbackImages = (response.data.photos || []).map((p) => ({
+                ...p,
+                emailKey: p.uploadedBy === 'mhuzaifa8519@gmail.com' ? 'FirstEmail' :
+                         p.uploadedBy === 'mhuzaifa86797@gmail.com' ? 'SecondEmail' :
+                         p.uploadedBy === 'muhammadjig8@gmail.com' ? 'ThirdEmail' : 'FirstEmail',
+                url: p.cloudinaryUrl || `${import.meta.env.VITE_BASE_URL}/photos/file/${p.fileId}`
+              }));
+              
+              // Filter by selected filter
+              if (selectedFilter === 'All') {
+                all = fallbackImages;
+              } else {
+                all = fallbackImages.filter(img => img.emailKey === selectedFilter);
+              }
+              console.log(`✅ Fallback returned ${all.length} images`);
+            }
+          } catch (fallbackErr) {
+            console.error("❌ Fallback also failed:", fallbackErr);
+          }
+        }
+        
+        console.log(`🎯 Total images loaded: ${all.length}`);
         setImages(all);
       } catch (err) {
         console.error("❌ Failed to fetch images:", err);
@@ -150,6 +196,9 @@ const Home = () => {
         <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
           Images: {images.length}
         </div>
+        <div className="text-xs text-gray-500 dark:text-gray-500">
+          Filter: {selectedFilter} | User: {user?.email || 'No user'}
+        </div>
         <select
           value={selectedFilter}
           onChange={(e) => setSelectedFilter(e.target.value)}
@@ -163,6 +212,15 @@ const Home = () => {
           className="px-4 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium transition-colors"
         >
           {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
+        </button>
+        <button
+          onClick={() => {
+            console.log("🔄 Manual refresh triggered");
+            window.location.reload();
+          }}
+          className="px-4 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium transition-colors"
+        >
+          Refresh
         </button>
       </div>
 
