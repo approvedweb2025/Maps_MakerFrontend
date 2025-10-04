@@ -19,10 +19,32 @@ const FirstEmail = () => {
   const fetchPhotos = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(
-        `${import.meta.env.VITE_BASE_URL}/photos/getImages/mhuzaifa8519@gmail.com`
-      );
-      const rawPhotos = res.data.photos || [];
+      console.log("🔄 FirstEmail: Fetching photos...");
+      
+      let rawPhotos = [];
+      
+      // Try the specific email endpoint first
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_BASE_URL}/photos/getImages/mhuzaifa8519@gmail.com`
+        );
+        console.log("✅ FirstEmail API response:", res.data);
+        rawPhotos = res.data.photos || [];
+        console.log(`📊 FirstEmail: Found ${rawPhotos.length} photos from specific endpoint`);
+      } catch (endpointErr) {
+        console.log("⚠️ Specific endpoint failed, trying fallback...", endpointErr.message);
+        
+        // Fallback to general endpoint and filter
+        try {
+          const fallbackRes = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+          if (fallbackRes.status === 200) {
+            rawPhotos = (fallbackRes.data.photos || []).filter(p => p.uploadedBy === 'mhuzaifa8519@gmail.com');
+            console.log(`📊 FirstEmail: Found ${rawPhotos.length} photos from fallback`);
+          }
+        } catch (fallbackErr) {
+          console.error("❌ Fallback also failed:", fallbackErr);
+        }
+      }
 
       const enrichedPhotos = rawPhotos.map((photo) => ({
         ...photo,
@@ -47,6 +69,7 @@ const FirstEmail = () => {
 
       setPhotosByYear(groupBy(enrichedPhotos, "year"));
       setPhotosByDistrict(groupBy(enrichedPhotos, "district"));
+      console.log(`🎯 FirstEmail: Processed ${enrichedPhotos.length} photos`);
     } catch (err) {
       console.error("❌ Error fetching photos:", err);
     } finally {
