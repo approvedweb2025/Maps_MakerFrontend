@@ -82,6 +82,7 @@ const buildPhoto = (img, emailKey) => {
             axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`)
               .then(res => {
                 console.log("✅ First Email API response:", res.data);
+                // Backend returns images directly, not wrapped in a photos property
                 return mapList(res.data, 'FirstEmail');
               })
               .catch(async (err) => {
@@ -97,6 +98,7 @@ const buildPhoto = (img, emailKey) => {
             axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`)
               .then(res => {
                 console.log("✅ Second Email API response:", res.data);
+                // Backend returns images directly, not wrapped in a photos property
                 return mapList(res.data, 'SecondEmail');
               })
               .catch(async (err) => {
@@ -112,6 +114,7 @@ const buildPhoto = (img, emailKey) => {
             axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`)
               .then(res => {
                 console.log("✅ Third Email API response:", res.data);
+                // Backend returns images directly, not wrapped in a photos property
                 return mapList(res.data, 'ThirdEmail');
               })
               .catch(async (err) => {
@@ -128,9 +131,42 @@ const buildPhoto = (img, emailKey) => {
           setImages([]);
           return;
         } else {
-          const parts = await Promise.all(promises);
-          photos = parts.flat();
-          console.log(`🎯 Total photos loaded: ${photos.length}`);
+          try {
+            const parts = await Promise.all(promises);
+            photos = parts.flat();
+            console.log(`🎯 Total photos loaded: ${photos.length}`);
+            
+            // If no photos loaded from specific endpoints, try fallback
+            if (photos.length === 0) {
+              console.log("🔄 No photos from specific endpoints, trying fallback...");
+              const resAll = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
+              const allPhotos = resAll.data?.photos || [];
+              console.log(`📊 Fallback: Found ${allPhotos.length} total photos`);
+              
+              // Filter by selected emails
+              const emailMap = {
+                FirstEmail: 'mhuzaifa8519@gmail.com',
+                SecondEmail: 'mhuzaifa86797@gmail.com', 
+                ThirdEmail: 'muhammadjig8@gmail.com'
+              };
+              
+              const filteredPhotos = allPhotos.filter(photo => {
+                const email = photo.uploadedBy;
+                return Object.entries(selectedEmails).some(([key, selected]) => 
+                  selected && email === emailMap[key]
+                );
+              });
+              
+              console.log(`🎯 Fallback: Found ${filteredPhotos.length} photos matching selected emails`);
+              photos = filteredPhotos.map(photo => {
+                const emailKey = Object.entries(emailMap).find(([_, email]) => email === photo.uploadedBy)?.[0] || 'FirstEmail';
+                return buildPhoto(photo, emailKey);
+              });
+            }
+          } catch (err) {
+            console.error("❌ Error loading photos:", err);
+            photos = [];
+          }
         }
 
         setImages(photos);
@@ -149,6 +185,10 @@ const buildPhoto = (img, emailKey) => {
   };
   const selectAll = () => {
     setSelectedEmails({ FirstEmail: true, SecondEmail: true, ThirdEmail: true });
+  };
+
+  const clearAll = () => {
+    setSelectedEmails({ FirstEmail: false, SecondEmail: false, ThirdEmail: false });
   };
 
   const heatmapData = (typeof window !== 'undefined' && window.google && mapReady)
@@ -200,6 +240,12 @@ const buildPhoto = (img, emailKey) => {
           className="px-3 py-1.5 bg-gray-200 dark:bg-zinc-700 hover:bg-gray-300 dark:hover:bg-zinc-600 rounded text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors"
         >
           All
+        </button>
+        <button 
+          onClick={clearAll} 
+          className="px-3 py-1.5 bg-red-200 dark:bg-red-700 hover:bg-red-300 dark:hover:bg-red-600 rounded text-sm font-medium text-red-700 dark:text-red-300 transition-colors"
+        >
+          Clear
         </button>
         <button
           onClick={() => setShowHeatmap(!showHeatmap)}
