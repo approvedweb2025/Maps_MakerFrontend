@@ -66,7 +66,8 @@ const Home = () => {
     FirstEmail: async () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
-        return res.data.map(img => buildPhoto(img, 'FirstEmail'));
+        const images = res.data.photos || res.data; // Handle both formats
+        return images.map(img => buildPhoto(img, 'FirstEmail'));
       } catch (err) {
         console.error('Error fetching First Email photos:', err);
         return [];
@@ -75,7 +76,8 @@ const Home = () => {
     SecondEmail: async () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
-        return res.data.map(img => buildPhoto(img, 'SecondEmail'));
+        const images = res.data.photos || res.data; // Handle both formats
+        return images.map(img => buildPhoto(img, 'SecondEmail'));
       } catch (err) {
         console.error('Error fetching Second Email photos:', err);
         return [];
@@ -84,7 +86,8 @@ const Home = () => {
     ThirdEmail: async () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
-        return res.data.map(img => buildPhoto(img, 'ThirdEmail'));
+        const images = res.data.photos || res.data; // Handle both formats
+        return images.map(img => buildPhoto(img, 'ThirdEmail'));
       } catch (err) {
         console.error('Error fetching Third Email photos:', err);
         return [];
