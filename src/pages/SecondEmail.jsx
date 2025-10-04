@@ -1,7 +1,6 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { IoClose } from "react-icons/io5";
-import { allowedEmails } from "../../utils/allowedEmail";
 
 const SecondEmail = () => {
   const [photos, setPhotos] = useState([]);
@@ -20,17 +19,20 @@ const SecondEmail = () => {
   const fetchPhotos = async () => {
     try {
       setLoading(true);
-      const allRes = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-      const allPhotos = Array.isArray(allRes.data?.photos) ? allRes.data.photos : [];
-      const rawPhotos = allPhotos.filter(p => p.latitude != null && p.longitude != null);
+      const res = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/photos/getImages/mhuzaifa86797@gmail.com`
+      );
+      const rawPhotos = res.data.photos || [];
 
       const enrichedPhotos = rawPhotos.map((photo) => ({
         ...photo,
-        year: photo.timestamp ? new Date(photo.timestamp).getFullYear() : new Date().getFullYear(),
+        year: new Date(photo.timestamp).getFullYear(),
         district: photo.district || "Unknown",
-        fullUrl: photo.cloudinaryUrl
-          ? photo.cloudinaryUrl
-          : `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId || photo.driveFileId}`,
+        // Build proper image URL with Cloudinary fallback
+        url: photo.cloudinaryUrl || 
+             (photo.fileId && /^[a-f0-9]{24}$/i.test(photo.fileId) 
+               ? `${import.meta.env.VITE_BASE_URL}/photos/file/${photo.fileId}`
+               : `https://drive.google.com/uc?export=view&id=${photo.driveFileId || photo.fileId}`)
       }));
 
       setPhotos(enrichedPhotos);
@@ -79,17 +81,20 @@ const SecondEmail = () => {
         {images.slice(0, 6).map((photo) => (
           <img
             key={photo.fileId}
-            src={photo.fullUrl}
+            src={photo.url}
             alt={photo.name}
             className="rounded w-full h-28 object-cover cursor-pointer"
-            onError={(e) => {
-              const id = photo.driveFileId || photo.fileId;
-              if (id) e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${id}`;
-            }}
             onClick={() => {
-              setPreviewImage(photo.fullUrl);
+              setPreviewImage(photo.url);
               setIsFullscreen(false);
               setZoom(1);
+            }}
+            onError={(e) => {
+              // Fallback to Google Drive if Cloudinary fails
+              const fallbackId = photo.driveFileId || photo.fileId;
+              if (fallbackId) {
+                e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${fallbackId}`;
+              }
             }}
           />
         ))}
@@ -100,7 +105,7 @@ const SecondEmail = () => {
   return (
     <div className="px-4 py-8 max-w-7xl mx-auto">
       <h1 className="text-3xl font-bold text-center mb-6 text-gray-800 dark:text-white">
-        Uploaded Photos
+        Second Email Photos (mhuzaifa86797@gmail.com)
       </h1>
 
       {/* Tabs */}
@@ -161,17 +166,20 @@ const SecondEmail = () => {
               {modalPhotos.map((photo) => (
                 <img
                   key={photo.fileId}
-                  src={photo.fullUrl}
+                  src={photo.url}
                   alt={photo.name}
                   className="w-full h-32 object-cover rounded cursor-pointer"
-                  onError={(e) => {
-                    const id = photo.driveFileId || photo.fileId;
-                    if (id) e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${id}`;
-                  }}
                   onClick={() => {
-                    setPreviewImage(photo.fullUrl);
+                    setPreviewImage(photo.url);
                     setIsFullscreen(false);
                     setZoom(1);
+                  }}
+                  onError={(e) => {
+                    // Fallback to Google Drive if Cloudinary fails
+                    const fallbackId = photo.driveFileId || photo.fileId;
+                    if (fallbackId) {
+                      e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${fallbackId}`;
+                    }
                   }}
                 />
               ))}
@@ -185,9 +193,7 @@ const SecondEmail = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
           <div
             className={`relative flex items-center justify-center ${
-              isFullscreen
-                ? "w-screen h-screen"
-                : "w-[300px] h-[300px] lg:w-[500px] lg:h-[500px]"
+              isFullscreen ? "w-screen h-screen" : "w-[300px] h-[300px] lg:w-[500px] lg:h-[500px]"
             }`}
           >
             <IoClose
