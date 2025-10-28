@@ -3,7 +3,7 @@ import { GoogleMap, LoadScript, Marker, InfoWindow, HeatmapLayer } from '@react-
 import axios from 'axios';
 import { useUser } from '../Context/UserContext';
 import { FaDirections } from 'react-icons/fa';
-import { IoClose } from 'react-icons/io5'; // ✅ IoClose icon import kiya gaya
+import { IoClose } from 'react-icons/io5';
 import { useMap } from '../Context/MapContext';
 
 // --- Component Styles (koi tabdeeli nahi) ---
@@ -31,16 +31,11 @@ const Home = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
-  
-  // ✅ Loading aur Error states add ki gayi hain
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // ✅ SecondEmail.jsx se behtar image preview modal states li gayi hain
   const [previewImage, setPreviewImage] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoom, setZoom] = useState(1);
-
   const [mapReady, setMapReady] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [showHeatmap, setShowHeatmap] = useState(false);
@@ -57,7 +52,6 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    // ✅ Data fetch karne wale functions mein error handling daali gayi hai
     const fetchPhotos = {
       FirstEmail: async () => {
         try {
@@ -96,9 +90,11 @@ const Home = () => {
         if (user?.role === 'admin') {
           permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
         } else {
-          if (user?.permissions?.includes('FirstEmail')) permissions.push('FirstEmail');
-          if (user?.permissions?.includes('SecondEmail')) permissions.push('SecondEmail');
-          if (user?.permissions?.includes('ThirdEmail')) permissions.push('ThirdEmail');
+          user?.permissions?.forEach(p => {
+            if (['FirstEmail', 'SecondEmail', 'ThirdEmail'].includes(p)) {
+              permissions.push(p);
+            }
+          });
         }
         
         const filteredPermissions = permissions.filter(p => selectedFilter === 'All' || selectedFilter === p);
@@ -119,7 +115,6 @@ const Home = () => {
     }
   }, [user, selectedFilter]);
 
-  // ✅ SecondEmail.jsx se preview modal open karne ka function liya gaya
   const openPreview = (photoUrl) => {
     setPreviewImage(photoUrl);
     setIsFullscreen(false);
@@ -131,7 +126,6 @@ const Home = () => {
   if (user?.role === 'admin' || user?.permissions?.includes('SecondEmail')) filters.push('SecondEmail');
   if (user?.role === 'admin' || user?.permissions?.includes('ThirdEmail')) filters.push('ThirdEmail');
 
-  // ✅ Performance behtar karne ke liye useMemo ka istemal
   const heatmapData = useMemo(() => {
     if (!mapReady || !window.google) return [];
     return images.map(img => new window.google.maps.LatLng(img.latitude, img.longitude));
@@ -204,18 +198,27 @@ const Home = () => {
             >
               <div className="w-fit max-w-sm p-2 rounded-md bg-white shadow-lg">
                 <img
-                  // ✅ Image URL ab a_id se banega
                   src={`${import.meta.env.VITE_BASE_URL}/photos/image-data/${selectedImage._id}`}
                   alt={selectedImage.name}
                   onClick={() => openPreview(`${import.meta.env.VITE_BASE_URL}/photos/image-data/${selectedImage._id}`)}
                   className="w-full h-40 object-cover rounded cursor-pointer"
-                  loading="lazy" // ✅ Lazy loading add ki gayi hai
+                  loading="lazy"
                 />
+                {/* ✅ TABDEELI YAHAN KI GAYI HAI */}
                 <div className="mt-2 text-sm space-y-1">
                   <p className="text-gray-500">
                     <span className="font-semibold text-black">District:</span> {selectedImage.district || '—'}
                   </p>
-                  <p className="text-xs text-gray-400 uppercase">
+                  <p className="text-gray-500">
+                    <span className="font-semibold text-black">Village:</span> {selectedImage.village || '—'}
+                  </p>
+                  <p className="text-gray-500">
+                    <span className="font-semibold text-black">Tehsil:</span> {selectedImage.tehsil || '—'}
+                  </p>
+                  <p className="text-gray-500">
+                    <span className="font-semibold text-black">Country:</span> {selectedImage.country || '—'}
+                  </p>
+                  <p className="text-xs text-gray-400 uppercase pt-1">
                     Uploaded by: {selectedImage.uploadedBy}
                   </p>
                   <a
@@ -233,7 +236,7 @@ const Home = () => {
         </GoogleMap>
       </LoadScript>
 
-      {/* ✅ SecondEmail.jsx se liya gaya behtar fullscreen/zoomable Image Preview Modal */}
+      {/* --- Image Preview Modal (koi tabdeeli nahi) --- */}
       {previewImage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70" onClick={() => setPreviewImage(null)}>
           <div
