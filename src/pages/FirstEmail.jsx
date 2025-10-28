@@ -46,7 +46,7 @@ const FirstEmail = () => {
 
       setPhotosByYear(groupBy(enrichedPhotos, "year"));
       setPhotosByDistrict(groupBy(enrichedPhotos, "district"));
-    } catch (err)
+    } catch (err) { // <<< FIX: Added curly braces here
       console.error("❌ Error fetching photos for FirstEmail:", err);
     } finally {
       setLoading(false);
