@@ -2,17 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { GoogleMap, LoadScript, Marker, InfoWindow, HeatmapLayer } from '@react-google-maps/api';
 import axios from 'axios';
 import { useUser } from '../Context/UserContext';
-import { FaDirections } from 'react-icons/fa';
+import { FaDirections, FaTimes } from 'react-icons/fa';
 import { useMap } from '../Context/MapContext';
-import { buildApiUrl } from '../config/api';
 
 const containerStyle = { width: '100%', height: '100vh' };
 const pakistanBounds = { north: 37.0, south: 23.5, west: 60.9, east: 77.0 };
 
-// 👇 Libraries constant to avoid reloading warning
-const libraries = ['visualization'];
-
 const darkMapStyle = [
+  // Aapka dark map style aisy hi rahega
   { featureType: "all", elementType: "geometry", stylers: [{ color: "#1e1e1e" }] },
   { featureType: "all", elementType: "labels.text.fill", stylers: [{ color: "#ffffff" }] },
   { featureType: "all", elementType: "labels.text.stroke", stylers: [{ color: "#000000" }, { weight: 2 }] },
@@ -34,14 +31,13 @@ const Home = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
   const [mapReady, setMapReady] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [showHeatmap, setShowHeatmap] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
   const { mapCenter, mapZoom } = useMap();
 
-  // Dark mode observer
   useEffect(() => {
     const observer = new MutationObserver(() =>
       setIsDarkMode(document.documentElement.classList.contains('dark'))
@@ -51,131 +47,64 @@ const Home = () => {
     return () => observer.disconnect();
   }, []);
 
-  // ✅ Build a reliable display URL: Cloudinary → GridFS stream → Google Drive
-  const buildPhoto = (img, emailKey) => {
-    const isObjectId = /^[a-f0-9]{24}$/i.test(String(img.fileId || ''));
-    const primaryUrl = img.cloudinaryUrl
-      ? img.cloudinaryUrl
-      : (isObjectId
-        ? buildApiUrl(`/photos/file/${img.fileId}`)
-        : `https://drive.google.com/uc?export=view&id=${img.driveFileId || img.fileId}`);
-    return { ...img, emailKey, url: primaryUrl };
-  };
-
-  // Fetch images from backend
   const fetchPhotos = {
     FirstEmail: async () => {
-      try {
-        console.log('🔄 FirstEmail: API URL:', buildApiUrl('/photos/get1stEmailPhotos'));
-        const res = await axios.get(buildApiUrl('/photos/get1stEmailPhotos'));
-        console.log("✅ FirstEmail: Response status:", res.status);
-        console.log("✅ FirstEmail: Response data:", res.data);
-        const images = res.data.photos || res.data; // Handle both formats
-        console.log("✅ FirstEmail: Processed images:", images.length);
-        
-        return images.map(img => buildPhoto(img, 'FirstEmail'));
-      } catch (err) {
-        console.error('❌ Error fetching First Email photos:', err);
-        console.error('❌ Error details:', err.response?.data || err.message);
-        return []; // Return empty array instead of mock data
-      }
+      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
+      // ✅ TABDEELI KI GAYI HAI: Backend { photos: [...] } bhejta hai, isliye res.data.photos istemal karein
+      return res.data.photos.map(img => ({
+        ...img,
+        emailKey: 'FirstEmail',
+        url: `${import.meta.env.VITE_BASE_URL}/photos/image-data/${img._id}`
+      }));
     },
     SecondEmail: async () => {
-      try {
-        console.log('🔄 SecondEmail: API URL:', buildApiUrl('/photos/get2ndEmailPhotos'));
-        const res = await axios.get(buildApiUrl('/photos/get2ndEmailPhotos'));
-        console.log("✅ SecondEmail: Response status:", res.status);
-        console.log("✅ SecondEmail: Response data:", res.data);
-        const images = res.data.photos || res.data; // Handle both formats
-        console.log("✅ SecondEmail: Processed images:", images.length);
-        
-        return images.map(img => buildPhoto(img, 'SecondEmail'));
-      } catch (err) {
-        console.error('❌ Error fetching Second Email photos:', err);
-        console.error('❌ Error details:', err.response?.data || err.message);
-        return []; // Return empty array instead of mock data
-      }
+      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
+      // ✅ TABDEELI KI GAYI HAI: res.data.photos istemal karein
+      return res.data.photos.map(img => ({
+        ...img,
+        emailKey: 'SecondEmail',
+        url: `${import.meta.env.VITE_BASE_URL}/photos/image-data/${img._id}`
+      }));
     },
     ThirdEmail: async () => {
-      try {
-        console.log('🔄 ThirdEmail: API URL:', buildApiUrl('/photos/get3rdEmailPhotos'));
-        const res = await axios.get(buildApiUrl('/photos/get3rdEmailPhotos'));
-        console.log("✅ ThirdEmail: Response status:", res.status);
-        console.log("✅ ThirdEmail: Response data:", res.data);
-        const images = res.data.photos || res.data; // Handle both formats
-        console.log("✅ ThirdEmail: Processed images:", images.length);
-        
-        return images.map(img => buildPhoto(img, 'ThirdEmail'));
-      } catch (err) {
-        console.error('❌ Error fetching Third Email photos:', err);
-        console.error('❌ Error details:', err.response?.data || err.message);
-        return []; // Return empty array instead of mock data
-      }
+      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
+      // ✅ TABDEELI KI GAYI HAI: res.data.photos istemal karein
+      return res.data.photos.map(img => ({
+        ...img,
+        emailKey: 'ThirdEmail',
+        url: `${import.meta.env.VITE_BASE_URL}/photos/image-data/${img._id}`
+      }));
     },
   };
 
   useEffect(() => {
     const fetchImages = async () => {
-      try {
-        setIsLoading(true);
-        console.log("🔄 Fetching images - User:", user);
-        console.log("🔄 Selected filter:", selectedFilter);
-        
-        // First try the email-specific approach
-        let all = [];
-        const permissions = [];
-        
-        // For now, let's always show all emails to debug
+      let all = [];
+      const permissions = [];
+      if (user?.role === 'admin') {
         permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
-        
-        console.log("🔄 Permissions:", permissions);
+      } else {
+        if (user?.permissions?.includes('FirstEmail')) permissions.push('FirstEmail');
+        if (user?.permissions?.includes('SecondEmail')) permissions.push('SecondEmail');
+        if (user?.permissions?.includes('ThirdEmail')) permissions.push('ThirdEmail');
+      }
 
+      try {
         for (const emailKey of permissions) {
           if (selectedFilter === 'All' || selectedFilter === emailKey) {
-            console.log(`🔄 Fetching ${emailKey} images...`);
             const data = await fetchPhotos[emailKey]();
-            console.log(`✅ ${emailKey} returned ${data.length} images`);
             all.push(...data);
           }
         }
-        
-        // If no images found, try the fallback approach (same as Images.jsx)
-        if (all.length === 0) {
-          console.log("🔄 No images from email endpoints, trying fallback...");
-          try {
-            const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get-photos`);
-            if (response.status === 200) {
-              const fallbackImages = (response.data.photos || []).map((p) => ({
-                ...p,
-                emailKey: p.uploadedBy === 'mhuzaifa8519@gmail.com' ? 'FirstEmail' :
-                         p.uploadedBy === 'mhuzaifa86797@gmail.com' ? 'SecondEmail' :
-                         p.uploadedBy === 'muhammadjig8@gmail.com' ? 'ThirdEmail' : 'FirstEmail',
-                url: p.cloudinaryUrl || `${import.meta.env.VITE_BASE_URL}/photos/file/${p.fileId}`
-              }));
-              
-              // Filter by selected filter
-              if (selectedFilter === 'All') {
-                all = fallbackImages;
-              } else {
-                all = fallbackImages.filter(img => img.emailKey === selectedFilter);
-              }
-              console.log(`✅ Fallback returned ${all.length} images`);
-            }
-          } catch (fallbackErr) {
-            console.error("❌ Fallback also failed:", fallbackErr);
-          }
-        }
-        
-        console.log(`🎯 Total images loaded: ${all.length}`);
         setImages(all);
-      } catch (err) {
-        console.error("❌ Failed to fetch images:", err);
-      } finally {
-        setIsLoading(false);
+      } catch (error) {
+        console.error("Failed to fetch images:", error);
+        // Yahan aap user ko error message dikha sakte hain
       }
     };
-    
-    fetchImages();
+    if (user) { // Sirf user ke login hone par data fetch karein
+      fetchImages();
+    }
   }, [user, selectedFilter]);
 
   const filters = ['All'];
@@ -183,55 +112,30 @@ const Home = () => {
   if (user?.role === 'admin' || user?.permissions?.includes('SecondEmail')) filters.push('SecondEmail');
   if (user?.role === 'admin' || user?.permissions?.includes('ThirdEmail')) filters.push('ThirdEmail');
 
-  const heatmapData = (typeof window !== 'undefined' && window.google && mapReady)
-    ? images.map(img => new window.google.maps.LatLng(img.latitude, img.longitude))
-    : [];
+  const heatmapData = images.map(img => new window.google.maps.LatLng(img.latitude, img.longitude));
 
   return (
     <div className="h-screen w-full relative">
       {/* Controls */}
-      <div className="absolute z-10 top-2 left-1/2 transform -translate-x-1/2 flex gap-3 p-3 items-center bg-white/90 dark:bg-zinc-800/90 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700">
-        {isLoading && (
-          <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-            Loading...
-          </div>
-        )}
-        <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
-          Images: {images.length}
-        </div>
-        <div className="text-xs text-gray-500 dark:text-gray-500">
-          Filter: {selectedFilter} | User: {user?.email || 'No user'}
-        </div>
+      <div className="absolute z-10 top-2 left-1/2 transform -translate-x-1/2 flex gap-2 p-2">
         <select
           value={selectedFilter}
           onChange={(e) => setSelectedFilter(e.target.value)}
-          className="border px-3 py-1.5 dark:bg-zinc-700 bg-white dark:text-white text-black text-center rounded text-sm font-medium"
+          className="border px-3 py-1 dark:bg-zinc-800 bg-white dark:text-white text-black text-center rounded text-sm"
         >
           {filters.map(f => <option key={f} value={f}>{f}</option>)}
         </select>
 
         <button
           onClick={() => setShowHeatmap(!showHeatmap)}
-          className="px-4 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium transition-colors"
+          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
         >
           {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
         </button>
-        <button
-          onClick={() => {
-            console.log("🔄 Manual refresh triggered");
-            window.location.reload();
-          }}
-          className="px-4 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium transition-colors"
-        >
-          Refresh
-        </button>
       </div>
 
-      <LoadScript
-        googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-        libraries={libraries}
-      >
+      {/* Google Map */}
+      <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY} libraries={['visualization']}>
         <GoogleMap
           key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}`}
           mapContainerStyle={containerStyle}
@@ -246,11 +150,11 @@ const Home = () => {
           }}
         >
           {/* Markers */}
-          {mapReady && images.map((img, index) => (
+          {mapReady && images.map((img) => (
             <Marker
-              key={index}
+              key={img._id} // Database ID hamesha unique hoti hai
               position={{ lat: img.latitude, lng: img.longitude }}
-              onClick={() => setSelectedImage(img)}
+              onClick={() => setSelectedImage({ ...img, zoom: false })}
               icon={markerIcons[img.emailKey] || markerIcons.FirstEmail}
             />
           ))}
@@ -266,37 +170,31 @@ const Home = () => {
               position={{ lat: selectedImage.latitude, lng: selectedImage.longitude }}
               onCloseClick={() => setSelectedImage(null)}
             >
-              <div className="w-fit max-w-sm p-2 rounded-md bg-white shadow-lg">
-                <img
-                  src={selectedImage.url}
-                  alt={selectedImage.name}
-                  className="w-full h-40 object-scale-down rounded"
-                  onError={(e) => {
-                    const fallbackId = selectedImage.driveFileId || selectedImage.fileId;
-                    if (fallbackId) {
-                      e.currentTarget.src = `https://drive.google.com/uc?export=view&id=${fallbackId}`;
-                    }
-                  }}
-                />
-                <div className="mt-2 text-sm space-y-1">
-                  <p className="text-gray-400">
-                    <span className="font-semibold text-black">GPS:</span> {selectedImage.latitude}, {selectedImage.longitude}
-                  </p>
-                  <div className="text-gray-400">
-                    <p><span className="font-semibold text-black">District:</span> {selectedImage.district || '—'}</p>
-                    <p><span className="font-semibold text-black">Village:</span> {selectedImage.village || '—'}</p>
-                    <p><span className="font-semibold text-black">Tehsil:</span> {selectedImage.tehsil || '—'}</p>
-                    <p><span className="font-semibold text-black">Country:</span> {selectedImage.country || '—'}</p>
+              <div className="w-fit max-w-sm p-2 rounded-md bg-white shadow-lg text-gray-800">
+                <div className="relative group">
+                  <img
+                    src={selectedImage.url}
+                    alt={selectedImage.name}
+                    onClick={() => setPreviewImage(selectedImage.url)}
+                    className={`w-full object-contain rounded cursor-pointer transition-transform duration-300 ${selectedImage.zoom ? 'scale-125' : 'scale-100'}`}
+                    style={{ height: selectedImage.zoom ? '300px' : '160px' }}
+                  />
+                  <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setSelectedImage(prev => ({ ...prev, zoom: true }))} className="bg-black/70 text-white px-2 py-1 rounded text-xs hover:bg-black">+</button>
+                    <button onClick={() => setSelectedImage(prev => ({ ...prev, zoom: false }))} className="bg-black/70 text-white px-2 py-1 rounded text-xs hover:bg-black">−</button>
                   </div>
-                  <p className="text-xs text-gray-400">
-                    <span className="uppercase font-semibold text-black">Uploaded by:</span> {selectedImage.uploadedBy}
-                  </p>
-                  <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${selectedImage.latitude},${selectedImage.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded"
-                  >
+                </div>
+
+                <div className="mt-2 text-sm space-y-1">
+                  <p><span className="font-semibold">GPS:</span> {selectedImage.latitude}, {selectedImage.longitude}</p>
+                  <div>
+                    <p><span className="font-semibold">District:</span> {selectedImage.district || 'N/A'}</p>
+                    <p><span className="font-semibold">Village:</span> {selectedImage.village || 'N/A'}</p>
+                    <p><span className="font-semibold">Tehsil:</span> {selectedImage.tehsil || 'N/A'}</p>
+                    <p><span className="font-semibold">Country:</span> {selectedImage.country || 'N/A'}</p>
+                  </div>
+                  <p className="text-xs"><span className="uppercase font-semibold">Uploaded by:</span> {selectedImage.uploadedBy}</p>
+                  <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedImage.latitude},${selectedImage.longitude}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded">
                     Get Directions <FaDirections />
                   </a>
                 </div>
@@ -305,6 +203,18 @@ const Home = () => {
           )}
         </GoogleMap>
       </LoadScript>
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center" onClick={() => setPreviewImage(null)}>
+          <div className="relative max-w-4xl w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setPreviewImage(null)} className="absolute -top-3 -right-3 bg-white text-black rounded-full p-2 hover:bg-gray-200 transition z-10">
+              <FaTimes />
+            </button>
+            <img src={previewImage} alt="Preview" className="w-full h-auto max-h-[90vh] object-contain rounded-lg shadow-lg" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
