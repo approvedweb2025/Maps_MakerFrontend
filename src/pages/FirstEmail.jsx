@@ -21,7 +21,7 @@ const FirstEmail = () => {
     try {
       setLoading(true);
       const res = await axios.get(
-        `${import.meta.env.VITE_BASE_URL}/photos/getImages/mhuzaifa8519@gmail.com`
+        `${import.meta.env.VITE_BASE_URL}/photos/getImages/peenaykapani@gmail.com`
       );
       // ✅ TABDEELI KI GAYI HAI: Backend { photos: [...] } bhejta hai, isliye res.data.photos istemal karein
       const rawPhotos = res.data.photos || [];
