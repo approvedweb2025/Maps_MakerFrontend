@@ -102,7 +102,7 @@ const FirstEmail = () => {
   return (
     <div className="px-4 py-8 max-w-7xl mx-auto">
       <h1 className="text-3xl font-bold text-center mb-6 text-gray-800 dark:text-white">
-        Photos by mhuzaifa8519
+        Photos by peenaykapani
       </h1>
 
       {/* Tabs */}
