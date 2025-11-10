@@ -1,15 +1,15 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GoogleMap, LoadScript, Marker, InfoWindow, HeatmapLayer } from '@react-google-maps/api';
 import axios from 'axios';
 import { useUser } from '../Context/UserContext';
-import { FaDirections } from 'react-icons/fa';
-import { IoClose } from 'react-icons/io5';
+import { FaDirections, FaTimes } from 'react-icons/fa';
 import { useMap } from '../Context/MapContext';
 
-// --- Component Styles (koi tabdeeli nahi) ---
 const containerStyle = { width: '100%', height: '100vh' };
 const pakistanBounds = { north: 37.0, south: 23.5, west: 60.9, east: 77.0 };
+
 const darkMapStyle = [
+  // ... (your dark map style remains unchanged)
   { featureType: "all", elementType: "geometry", stylers: [{ color: "#1e1e1e" }] },
   { featureType: "all", elementType: "labels.text.fill", stylers: [{ color: "#ffffff" }] },
   { featureType: "all", elementType: "labels.text.stroke", stylers: [{ color: "#000000" }, { weight: 2 }] },
@@ -20,22 +20,18 @@ const darkMapStyle = [
   { featureType: "poi", elementType: "geometry", stylers: [{ color: "#2c2c2c" }] },
   { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e1626" }] }
 ];
+
 const markerIcons = {
   FirstEmail: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
   SecondEmail: "http://maps.google.com/mapfiles/ms/icons/green-dot.png",
   ThirdEmail: "http://maps.google.com/mapfiles/ms/icons/orange-dot.png",
 };
 
-// --- Main Home Component ---
 const Home = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [zoom, setZoom] = useState(1);
   const [mapReady, setMapReady] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [showHeatmap, setShowHeatmap] = useState(false);
@@ -51,102 +47,68 @@ const Home = () => {
     return () => observer.disconnect();
   }, []);
 
+  // ✅ CHANGED: Fetch images and build the URL from the database endpoint
+  const fetchPhotos = {
+    FirstEmail: async () => {
+      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
+      return res.data.map(img => ({
+        ...img,
+        emailKey: 'FirstEmail',
+        // Use the new endpoint with the database _id
+        url: `${import.meta.env.VITE_BASE_URL}/photos/image-data/${img._id}`
+      }));
+    },
+    SecondEmail: async () => {
+      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
+      return res.data.map(img => ({
+        ...img,
+        emailKey: 'SecondEmail',
+        // Use the new endpoint with the database _id
+        url: `${import.meta.env.VITE_BASE_URL}/photos/image-data/${img._id}`
+      }));
+    },
+    ThirdEmail: async () => {
+      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
+      return res.data.map(img => ({
+        ...img,
+        emailKey: 'ThirdEmail',
+        // Use the new endpoint with the database _id
+        url: `${import.meta.env.VITE_BASE_URL}/photos/image-data/${img._id}`
+      }));
+    },
+  };
+
   useEffect(() => {
-    const fetchPhotos = {
-      FirstEmail: async () => {
-        try {
-          const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get1stEmailPhotos`);
-          return res.data.map(img => ({ ...img, emailKey: 'FirstEmail' }));
-        } catch (err) {
-          console.error("Error fetching FirstEmail photos:", err);
-          throw new Error("Failed to load FirstEmail data.");
-        }
-      },
-      SecondEmail: async () => {
-        try {
-          const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get2ndEmailPhotos`);
-          return res.data.map(img => ({ ...img, emailKey: 'SecondEmail' }));
-        } catch (err) {
-          console.error("Error fetching SecondEmail photos:", err);
-          throw new Error("Failed to load SecondEmail data.");
-        }
-      },
-      ThirdEmail: async () => {
-        try {
-          const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/get3rdEmailPhotos`);
-          return res.data.map(img => ({ ...img, emailKey: 'ThirdEmail' }));
-        } catch (err) {
-          console.error("Error fetching ThirdEmail photos:", err);
-          throw new Error("Failed to load ThirdEmail data.");
-        }
-      },
-    };
-
-    const fetchAllImages = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const permissions = [];
-        if (user?.role === 'admin') {
-          permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
-        } else {
-          user?.permissions?.forEach(p => {
-            if (['FirstEmail', 'SecondEmail', 'ThirdEmail'].includes(p)) {
-              permissions.push(p);
-            }
-          });
-        }
-        
-        const filteredPermissions = permissions.filter(p => selectedFilter === 'All' || selectedFilter === p);
-        
-        const promises = filteredPermissions.map(key => fetchPhotos[key]());
-        const results = await Promise.all(promises);
-        
-        setImages(results.flat());
-      } catch (err) {
-        setError(err.message || "An unknown error occurred.");
-      } finally {
-        setLoading(false);
+    const fetchImages = async () => {
+      let all = [];
+      const permissions = [];
+      if (user?.role === 'admin') permissions.push('FirstEmail', 'SecondEmail', 'ThirdEmail');
+      else {
+        if (user?.permissions?.includes('FirstEmail')) permissions.push('FirstEmail');
+        if (user?.permissions?.includes('SecondEmail')) permissions.push('SecondEmail');
+        if (user?.permissions?.includes('ThirdEmail')) permissions.push('ThirdEmail');
       }
+      for (const emailKey of permissions) {
+        if (selectedFilter === 'All' || selectedFilter === emailKey) {
+          const data = await fetchPhotos[emailKey]();
+          all.push(...data);
+        }
+      }
+      setImages(all);
     };
-
-    if (user) {
-      fetchAllImages();
-    }
+    fetchImages();
   }, [user, selectedFilter]);
 
-  const openPreview = (photoUrl) => {
-    setPreviewImage(photoUrl);
-    setIsFullscreen(false);
-    setZoom(1);
-  };
-  
   const filters = ['All'];
   if (user?.role === 'admin' || user?.permissions?.includes('FirstEmail')) filters.push('FirstEmail');
   if (user?.role === 'admin' || user?.permissions?.includes('SecondEmail')) filters.push('SecondEmail');
   if (user?.role === 'admin' || user?.permissions?.includes('ThirdEmail')) filters.push('ThirdEmail');
 
-  const heatmapData = useMemo(() => {
-    if (!mapReady || !window.google) return [];
-    return images.map(img => new window.google.maps.LatLng(img.latitude, img.longitude));
-  }, [images, mapReady]);
-
+  const heatmapData = images.map(img => new window.google.maps.LatLng(img.latitude, img.longitude));
 
   return (
     <div className="h-screen w-full relative">
-      {/* --- Loading aur Error Overlays --- */}
-      {loading && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black bg-opacity-50">
-          <p className="text-white text-lg">Loading Photos...</p>
-        </div>
-      )}
-      {error && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-red-900 bg-opacity-80">
-          <p className="text-white text-lg">Error: {error}</p>
-        </div>
-      )}
-
-      {/* --- Controls --- */}
+      {/* Controls */}
       <div className="absolute z-10 top-2 left-1/2 transform -translate-x-1/2 flex gap-2 p-2">
         <select
           value={selectedFilter}
@@ -155,6 +117,7 @@ const Home = () => {
         >
           {filters.map(f => <option key={f} value={f}>{f}</option>)}
         </select>
+
         <button
           onClick={() => setShowHeatmap(!showHeatmap)}
           className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
@@ -163,7 +126,7 @@ const Home = () => {
         </button>
       </div>
 
-      {/* --- Google Map --- */}
+      {/* Google Map */}
       <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY} libraries={['visualization']}>
         <GoogleMap
           key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}`}
@@ -178,48 +141,71 @@ const Home = () => {
             gestureHandling: 'greedy'
           }}
         >
-          {mapReady && images.map((img) => (
+          {/* Markers */}
+          {mapReady && images.map((img, index) => (
             <Marker
-              key={img._id}
+              // ✅ CHANGED: Use `img._id` for a more reliable unique key
+              key={img._id || index}
               position={{ lat: img.latitude, lng: img.longitude }}
-              onClick={() => setSelectedImage(img)}
+              onClick={() => setSelectedImage({ ...img, zoom: false })}
               icon={markerIcons[img.emailKey] || markerIcons.FirstEmail}
             />
           ))}
 
+          {/* Heatmap */}
           {mapReady && showHeatmap && heatmapData.length > 0 && (
             <HeatmapLayer data={heatmapData} options={{ radius: 50 }} />
           )}
 
+          {/* InfoWindow with Zoom + Preview */}
           {selectedImage && (
             <InfoWindow
               position={{ lat: selectedImage.latitude, lng: selectedImage.longitude }}
               onCloseClick={() => setSelectedImage(null)}
             >
-              <div className="w-fit max-w-sm p-2 rounded-md bg-white shadow-lg">
-                <img
-                  src={`${import.meta.env.VITE_BASE_URL}/photos/image-data/${selectedImage._id}`}
-                  alt={selectedImage.name}
-                  onClick={() => openPreview(`${import.meta.env.VITE_BASE_URL}/photos/image-data/${selectedImage._id}`)}
-                  className="w-full h-40 object-cover rounded cursor-pointer"
-                  loading="lazy"
-                />
-                {/* ✅ TABDEELI YAHAN KI GAYI HAI */}
+              <div className="w-fit max-w-sm p-2 rounded-md bg-white shadow-lg relative">
+                <div className="relative group">
+                  <img
+                    src={selectedImage.url} // This will now correctly point to the database endpoint
+                    alt={selectedImage.name}
+                    onClick={() => setPreviewImage(selectedImage.url)}
+                    className={`w-full object-contain rounded cursor-pointer transition-transform duration-300 ${selectedImage.zoom ? 'scale-125' : 'scale-100'}`}
+                    style={{ height: selectedImage.zoom ? '300px' : '160px' }}
+                  />
+
+                  {/* Zoom Controls */}
+                  <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() =>
+                        setSelectedImage(prev => ({ ...prev, zoom: true }))
+                      }
+                      className="bg-black/70 text-white px-2 py-1 rounded text-xs hover:bg-black"
+                    >
+                      +
+                    </button>
+                    <button
+                      onClick={() =>
+                        setSelectedImage(prev => ({ ...prev, zoom: false }))
+                      }
+                      className="bg-black/70 text-white px-2 py-1 rounded text-xs hover:bg-black"
+                    >
+                      −
+                    </button>
+                  </div>
+                </div>
+
                 <div className="mt-2 text-sm space-y-1">
-                  <p className="text-gray-500">
-                    <span className="font-semibold text-black">District:</span> {selectedImage.district || '—'}
+                  <p className="text-gray-400">
+                    <span className="font-semibold text-black">GPS:</span> {selectedImage.latitude}, {selectedImage.longitude}
                   </p>
-                  <p className="text-gray-500">
-                    <span className="font-semibold text-black">Village:</span> {selectedImage.village || '—'}
-                  </p>
-                  <p className="text-gray-500">
-                    <span className="font-semibold text-black">Tehsil:</span> {selectedImage.tehsil || '—'}
-                  </p>
-                  <p className="text-gray-500">
-                    <span className="font-semibold text-black">Country:</span> {selectedImage.country || '—'}
-                  </p>
-                  <p className="text-xs text-gray-400 uppercase pt-1">
-                    Uploaded by: {selectedImage.uploadedBy}
+                  <div className="text-gray-400">
+                    <p><span className="font-semibold text-black">District:</span> {selectedImage.district || '—'}</p>
+                    <p><span className="font-semibold text-black">Village:</span> {selectedImage.village || '—'}</p>
+                    <p><span className="font-semibold text-black">Tehsil:</span> {selectedImage.tehsil || '—'}</p>
+                    <p><span className="font-semibold text-black">Country:</span> {selectedImage.country || '—'}</p>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    <span className="uppercase font-semibold text-black">Uploaded by:</span> {selectedImage.uploadedBy}
                   </p>
                   <a
                     href={`https://www.google.com/maps/dir/?api=1&destination=${selectedImage.latitude},${selectedImage.longitude}`}
@@ -236,32 +222,21 @@ const Home = () => {
         </GoogleMap>
       </LoadScript>
 
-      {/* --- Image Preview Modal (koi tabdeeli nahi) --- */}
+      {/* Image Preview Modal */}
       {previewImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70" onClick={() => setPreviewImage(null)}>
-          <div
-            className={`relative flex items-center justify-center ${isFullscreen ? "w-screen h-screen" : "w-[90vw] h-[90vh] max-w-4xl max-h-4xl"}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <IoClose
-              size={32}
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
+          <div className="relative max-w-4xl w-full mx-4">
+            <button
               onClick={() => setPreviewImage(null)}
-              className="absolute top-2 right-2 text-white cursor-pointer z-20 bg-black/50 rounded-full p-1"
+              className="absolute top-3 right-3 bg-white text-black rounded-full p-2 hover:bg-gray-200 transition"
+            >
+              <FaTimes />
+            </button>
+            <img
+              src={previewImage} // This will also correctly point to the database endpoint
+              alt="Preview"
+              className="w-full h-auto max-h-[90vh] object-contain rounded-lg shadow-lg"
             />
-            <div className="absolute bottom-4 right-4 flex gap-2 z-20">
-              <button onClick={() => setIsFullscreen(!isFullscreen)} className="bg-black bg-opacity-50 text-white px-3 py-1 rounded-md text-sm">{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</button>
-              <button onClick={() => setZoom((z) => Math.min(z + 0.2, 3))} className="bg-black bg-opacity-50 text-white px-3 py-1 rounded-md text-sm">➕</button>
-              <button onClick={() => setZoom((z) => Math.max(z - 0.2, 1))} className="bg-black bg-opacity-50 text-white px-3 py-1 rounded-md text-sm">➖</button>
-            </div>
-            <div className="w-full h-full overflow-hidden flex items-center justify-center">
-              <img
-                src={previewImage}
-                alt="Preview"
-                style={{ transform: `scale(${zoom})` }}
-                className="transition-transform duration-200 max-w-full max-h-full object-contain"
-                loading="lazy"
-              />
-            </div>
           </div>
         </div>
       )}
