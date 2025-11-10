@@ -21,7 +21,7 @@ const SecondEmail = () => {
       setLoading(true);
       // API call metadata fetch karne ke liye bilkul theek hai
       const res = await axios.get(
-        `${import.meta.env.VITE_BASE_URL}/photos/getImages/mhuzaifa86797@gmail.com`
+        `${import.meta.env.VITE_BASE_URL}/photos/getImages/homesindh@gmail.com`
       );
 
       // ✅ TABDEELI KI GAYI HAI: Backend { photos: [...] } bhejta hai, isliye res.data.photos istemal karein
@@ -101,7 +101,7 @@ const SecondEmail = () => {
   return (
     <div className="px-4 py-8 max-w-7xl mx-auto">
       <h1 className="text-3xl font-bold text-center mb-6 text-gray-800 dark:text-white">
-        Photos by mhuzaifa86797
+        Photos by homesindh
       </h1>
 
       {/* Tabs */}
