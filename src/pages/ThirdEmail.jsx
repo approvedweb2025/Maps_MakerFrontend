@@ -20,7 +20,7 @@ const ThirdEmail = () => {
   const getImages = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/getImages/demo@gmail.com`);
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/photos/getImages/mhuzaifa8519@gmail.com`);
       
       // ✅ Aapka yeh logic pehle se hi theek tha!
       const fetchedPhotos = response.data.photos || [];
@@ -90,7 +90,7 @@ const ThirdEmail = () => {
       <div className="flex lg:flex-row flex-col items-center mb-8 justify-between gap-4 py-5 px-4 rounded-lg dark:bg-zinc-800 bg-gray-200">
         <div>
           <h1 className="text-xl sm:text-2xl font-roboto uppercase text-gray-800 dark:text-white">
-            Photos by demo ({photos.length})
+            Photos by mhuzaifa8519@gmail.com ({photos.length})
           </h1>
           {photos.length > 0 && (
             <p className="text-sm mt-1 dark:text-gray-300">
