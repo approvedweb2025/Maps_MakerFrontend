@@ -22,7 +22,7 @@ const ThirdEmail = () => {
     try {
       setLoading(true);
       const res = await axios.get(
-        `${import.meta.env.VITE_BASE_URL}/photos/getImages/mhuzaifa8519@gmail.com`
+        `${import.meta.env.VITE_BASE_URL}/photos/getImages/mhuzaifa86797@gmail.com`
       );
       
       const rawPhotos = res.data.photos || [];
@@ -105,7 +105,7 @@ const ThirdEmail = () => {
   return (
     <div className="px-4 py-8 max-w-7xl mx-auto">
       <h1 className="text-3xl font-bold text-center mb-6 text-gray-800 dark:text-white">
-        Photos by mhuzaifa8519@gmail.com
+        Photos by mhuzaifa86797@gmail.com
       </h1>
 
       {/* Tabs (bilkul SecondEmail jaisa) */}
